@@ -63,9 +63,9 @@ DKISTanalysis.pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,mu
 #variation in intensity value corresponding to wavelengths; PTE
 
 # comment out if don't need PTE (shouldn't, usually)
-stdevs_flaretime, ptes_flaretime = DKISTanalysis.deviations(bkgd_subtract_flaretime,nonflare_average,nonflare_stdevs)
+# stdevs_flaretime, ptes_flaretime = DKISTanalysis.deviations(bkgd_subtract_flaretime,nonflare_average,nonflare_stdevs)
 
-DKISTanalysis.pltptes(ptes_flaretime,image_data_arr_arr_raster1)
+# DKISTanalysis.pltptes(ptes_flaretime,image_data_arr_arr_raster1)
 
 # equivalent widths, effective widths, widths
 caII_low = 480
@@ -113,7 +113,7 @@ storeamp1,storeamp2,storesig1,storesig2,storemu1,storemu2 = \
                             storesig2,bkgd_subtract_flaretime,dispersion_range,
                             DKISTanalysis.double_gaussian_fit,times_raster1,
                             caII_low,caII_high,DKISTanalysis.double_gaussian,DKISTanalysis.gaussian,
-                            selwl,sel)
+                            selwl,sel,parameters = [2e6,396.82,0.015,.5e6,396.86,0.015])
 
 store_ten_width = []
 store_quarter_width = []
