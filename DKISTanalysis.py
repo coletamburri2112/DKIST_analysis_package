@@ -10,6 +10,7 @@ Description of script:
 from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 import os
 # from sunpy.net import Fido, attrs as a
 # import pandas as pd
@@ -22,7 +23,7 @@ import os
 # import radx_ct
 # import math as math
 # import scipy.special as sp
-# from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit
 # from scipy.stats import skewnorm
 # from lmfit.models import SkewedGaussianModel
 # import matplotlib
@@ -44,10 +45,13 @@ import sunpy.map
 from sunpy.net import Fido
 from sunpy.net import attrs as a
 
-def gaussian(x, params):
-    (c1, mu1, sigma1) = params
+def gaussian(x, c1, mu1, sigma1):
     res = c1 * np.exp( - (x - mu1)**2.0 / (2.0 * sigma1**2.0) )
     return res
+
+def gaussfit(params,selwl,sel):
+    fit = gaussian( selwl, params )
+    return (fit - sel)
 
 def numgreaterthan(array,value):
     count = 0
@@ -58,6 +62,20 @@ def numgreaterthan(array,value):
 
 #define colors for plotting
 def color_muted2():
+    muted =['#332288', '#88CCEE', '#44AA99','#117733','#999933','#DDCC77', '#CC6677','#882255','#AA4499','#DDDDDD']
+#  0= indigo
+# 1 = cyan
+# 2 = teal
+# 3 = green
+# 4 = olive
+# 5= sand
+# 6 = rose
+# 7 = wine
+# 8 = purple
+# 9=grey
+    return muted
+
+
     muted =['#332288', '#88CCEE', '#44AA99','#117733','#999933','#DDCC77', '#CC6677','#882255','#AA4499','#DDDDDD']
 #  0= indigo
 # 1 = cyan
@@ -94,9 +112,7 @@ def pathdef(path,folder1):
     
     return dir_list2
 
-def double_gaussian( x, params ):
-    #(c1, mu1, sigma1, c2, mu2, sigma2,alpha) = params
-    (c1, mu1, sigma1, c2, mu2, sigma2) = params
+def double_gaussian( x, c1, mu1, sigma1, c2, mu2, sigma2 ):
     res =   (c1 * np.exp( - (x - mu1)**2.0 / (2.0 * sigma1**2.0) )) \
           + (c2 * np.exp( - (x - mu2)**2.0 / (2.0 * sigma2**2.0) ))
             
@@ -459,14 +475,15 @@ def widths_strengths(ew_CaII_all_fs,eqw_CaII_all_fs,width_CaII_all_fs,
 def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
               bkgd_subtract_flaretime,dispersion_range, double_gaussian_fit,
               times_raster1,caII_low,caII_high,double_gaussian,gaussian,selwl,sel,
-              pid='pid_1_84'):
+              pid='pid_1_84',parameters = [2e6,396.82,0.01,2e6,396.86,0.015]):
     fig, ax = plt.subplots(3,4,figsize=(30,30))
 
     fig.suptitle('Ca II H line evolution, 19-Aug-2022, Raster 1, Kernel Center',fontsize=35)
     
     for i in range(np.shape(bkgd_subtract_flaretime)[0]):
+        selwl = dispersion_range[caII_low,caII_high]
         sel = bkgd_subtract_flaretime[i,caII_low:caII_high,1350]-min(bkgd_subtract_flaretime[i,caII_low:caII_high,1350])
-        fit = leastsq(double_gaussian_fit,[2e6,396.82,0.01,2e6,396.86,0.015],(selwl,sel))
+        fit = leastsq(double_gaussian_fit,parameters,(selwl,sel))
         [c1,mu1,sigma1,c2,mu2,sigma2] = fit[0]
         storeamp1.append(c1)
         storemu1.append(mu1)
@@ -488,6 +505,124 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
     #save
     
     return storeamp1, storeamp2, storesig1, storesig2, storemu1, storemu2
+
+def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
+                    times_raster1, line_low, line_high,
+                    double_gaussian, gaussian, selwl,sel,paramsgauss,
+                    params2gauss,params2gaussneg,pid='pid_1_84',
+                    date = '08/09/2022',line = 'Ca II H',nimg = 7,
+                    kernind = 1350):
+    
+
+    
+    fits_1g = []
+    fits_2g = []
+    fits_2gneg = []
+    
+    print(np.shape(fits_1g))
+    
+    for i in range(nimg):
+        selwl = dispersion_range[line_low:line_high]
+        sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
+            min(bkgd_subtract_flaretime[i,line_low:line_high,kernind])
+        
+        print(paramsgauss)
+        fit1g, fit1gcov = curve_fit(gaussian,selwl,sel,p0=paramsgauss)
+        fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, p0=params2gauss)
+        #fit2gneg, fit2gnegcov = curve_fit(double_gaussian,selwl, sel,p0=params2gaussneg,maxfev=5000)
+            
+        fits_1g.append([fit1g,fit1gcov])
+        fits_2g.append([fit2g,fit2gcov])
+        #fits_2gneg.append([fit2gneg,fit2gnegcov])
+            
+    return fits_1g, fits_2g, fits_2gneg
+
+def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
+                  gaussian,times_raster1,muted,
+                  line_low,line_high,fits_1g,fits_2g,fits_2gneg,
+                  pid='pid_1_84',
+                  date = '08092022',line = 'Ca II H',nimg = 7,
+                  kernind = 1350,nrol=2,ncol=4,lamb0 = 396.85,c=2.99e5,
+                  note=''):
+    
+    fig, ax = plt.subplots(2,4,figsize=(30,15))
+    fig.suptitle(line+' evolution w/ fitting, '+date+note,fontsize=20)
+    
+    selwl = dispersion_range[line_low:line_high]
+    
+    selwlshift = selwl-lamb0
+    
+    selwlvel = (selwl/lamb0-1)*c
+    
+    def veltrans(x):
+        return (((x+lamb0)/lamb0)-1)*c
+    
+    def wltrans(x):
+        return (((x/c)+1)*lamb0)-lamb0
+    
+    for i in range(nimg):
+        
+        
+        sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
+            min(bkgd_subtract_flaretime[i,line_low:line_high,kernind])
+        
+        if i == 0:
+            maxprofile = max(sel)
+        else:
+            maxprofilenow = max(sel)
+            if maxprofilenow > maxprofile:
+                maxprofile = maxprofilenow
+            
+        fit1g = fits_1g[i][0]
+        fit2g = fits_2g[i][0]
+        #fit2gneg = fits_2gneg[i][0]
+        
+        gaussfity = gaussian(selwl,fit1g[0],fit1g[1],fit1g[2])
+        gauss2fity = double_gaussian(selwl,fit2g[0],fit2g[1],fit2g[2],\
+                                     fit2g[3],fit2g[4],fit2g[5])
+            
+        comp1fity = gaussian(selwl,fit2g[0],fit2g[1],fit2g[2])
+        comp2fity = gaussian(selwl,fit2g[3],fit2g[4],fit2g[5])
+        #gauss2negfity = double_gaussian(selwl,fit2gneg[0],fit2gneg[1],\
+                                        # fit2gneg[2],fit2gneg[3],fit2gneg[4],
+                                        # fit2gneg[5])
+    
+        ax.flatten()[i].plot(selwlshift,sel,label='data')
+        #ax.flatten()[i].plot(selwlshift,gaussfity,label='G1')
+        ax.flatten()[i].plot(selwlshift,gauss2fity,label='G2',color=muted[2])
+        ax.flatten()[i].plot(selwlshift,comp1fity,label='G2,C1',color=muted[4])
+        ax.flatten()[i].plot(selwlshift,comp2fity,label='G2,C2',color=muted[6])
+        #ax.flatten()[i].plot(selwl,gauss2negfity,label='Gauss2neg')
+        ax.flatten()[i].legend()
+        ax.flatten()[i].axis(ymin=0,ymax=maxprofile+0.3e6)
+        ax.flatten()[i].axvline(0,linestyle='dotted')
+        secaxx = ax.flatten()[i].secondary_xaxis('top', functions=(veltrans,wltrans))
+        ax.flatten()[i].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))    
+    secaxx = ax.flatten()[0].secondary_xaxis('top', functions=(veltrans,wltrans))
+    secaxx.set_xlabel(r'Velocity $[km\; s^{-1}]$')
+    ax.flatten()[0].set_xlabel(r' $\lambda$ - $\lambda_0$ [nm]')
+    ax.flatten()[0].set_ylabel(r'Intensity (- $I_{min}$) $[W\; cm^{-2} sr^{-1} \AA^{-1}]$')
+
+
+    
+    plt.subplots_adjust(wspace=0.4,hspace=0.4)
+    plt.show()
+    
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+\
+                pid+'/fits'+date+note+'.png')
+    
+    return None
+
+        
+        
+            
+        
+    
+    
+    
+    
+        
+        
 
 def perclevels(bkgd_subtract_flaretime,dispersion_range,caII_low,caII_high,
                store_ten_width,store_quarter_width,store_half_width):
