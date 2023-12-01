@@ -541,7 +541,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   gaussian,times_raster1,muted,
                   line_low,line_high,fits_1g,fits_2g,fits_2gneg,
                   pid='pid_1_84',
-                  date = '08092022',line = 'Ca II H',nimg = 7,
+                  date = '08192022',line = 'Ca II H',nimg = 7,
                   kernind = 1350,nrol=2,ncol=4,lamb0 = 396.85,c=2.99e5,
                   note=''):
     
