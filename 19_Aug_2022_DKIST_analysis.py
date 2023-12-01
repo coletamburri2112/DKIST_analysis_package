@@ -124,6 +124,20 @@ store_ten_width, store_quarter_width, store_half_width = \
                              caII_high,store_ten_width,store_quarter_width,
                              store_half_width)
     
+fits_1g,fits_2g,fits_2gneg = DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,dispersion_range,
+                    times_raster1, caII_low, caII_high,
+                    DKISTanalysis.double_gaussian, DKISTanalysis.gaussian, selwl,sel,[4e6,396.85,0.02],
+                    [2e6,396.84,0.015,2e6,396.86,0.015],[.5e6,396.85,0.015,-1e6,396.85,0.015],pid='pid_1_84',
+                    date = '08/09/2022',line = 'Ca II H',nimg = 7,
+                    kernind = 1350)
+
+DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range,DKISTanalysis.double_gaussian,
+                  DKISTanalysis.gaussian,times_raster1,muted,
+                  caII_low,caII_high,fits_1g,fits_2g,fits_2gneg,
+                  pid='pid_1_84',
+                  date = '08092022',line = 'Ca II H',nimg = 7,
+                  kernind = 1350,nrol=2,ncol=4,note=', 2e6 first, 2e6 second component, start closer to cent')
+    
 
 
 
