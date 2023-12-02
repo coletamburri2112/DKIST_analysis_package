@@ -51,7 +51,7 @@ image_data_arr_arr,i_file_raster1, for_scale, times_raster1 = \
 
 spatial_range, dispersion_range = DKISTanalysis.spatialaxis(i_file_raster1)
 
-spatial_range2, raster_range = DKISTanalysis.spatialranges(i_file_raster1,spatial_range)
+spatial_range2, raster_range = DKISTanalysis.vispranges(i_file_raster1,spatial_range)
 
 x_cent, y_cent, x_delt, y_delt, x_range, y_range, arcsec_slit, nspace = \
     DKISTanalysis.space_range(i_file_raster1)

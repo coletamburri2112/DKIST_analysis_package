@@ -597,11 +597,13 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
     # current use; for better option, look to functions "fittingroutines"
     # and "pltfitresults"
 
-    fig.suptitle('Ca II H line evolution, 19-Aug-2022, Raster 1, Kernel Center',fontsize=35)
+    fig.suptitle('Ca II H line evolution, 19-Aug-2022, Raster 1, Kernel Center'
+                 ,fontsize=35)
     
     for i in range(np.shape(bkgd_subtract_flaretime)[0]):
         selwl = dispersion_range[caII_low,caII_high]
-        sel = bkgd_subtract_flaretime[i,caII_low:caII_high,1350]-min(bkgd_subtract_flaretime[i,caII_low:caII_high,1350])
+        sel = bkgd_subtract_flaretime[i,caII_low:caII_high,1350]-\
+            min(bkgd_subtract_flaretime[i,caII_low:caII_high,1350])
         fit = leastsq(double_gaussian_fit,parameters,(selwl,sel))
         [c1,mu1,sigma1,c2,mu2,sigma2] = fit[0]
         storeamp1.append(c1)
@@ -619,7 +621,8 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
         ax.flatten()[i].grid()
     ax.flatten()[-1].axis('off')
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+'/gaussianfits.png')
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+\
+                '/gaussianfits.png')
     
     #save
     
@@ -631,24 +634,27 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                     params2gauss,params2gaussneg,pid='pid_1_84',
                     date = '08/09/2022',line = 'Ca II H',nimg = 7,
                     kernind = 1350):
+    # More flexible line fitting routines; currently for Ca II H as observed
+    # in pid_1_84, but flexible for application to other lines.  Currently also
+    # only includes functinoality for single Gaussian and double Gaussian fits;
+    # additions welcome (skewed Gauss? Lorentz? Voigt? etc.)
     
-
+    # Returns, via scipy.optimize.curve_fit, both the fit parameters and the 
+    # error metrics for each model
     
     fits_1g = []
     fits_2g = []
     fits_2gneg = []
-    
-    print(np.shape(fits_1g))
     
     for i in range(nimg):
         selwl = dispersion_range[line_low:line_high]
         sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
             min(bkgd_subtract_flaretime[i,line_low:line_high,kernind])
         
-        print(paramsgauss)
         fit1g, fit1gcov = curve_fit(gaussian,selwl,sel,p0=paramsgauss)
         fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, p0=params2gauss)
-        #fit2gneg, fit2gnegcov = curve_fit(double_gaussian,selwl, sel,p0=params2gaussneg,maxfev=5000)
+        #fit2gneg, fit2gnegcov = curve_fit(double_gaussian,selwl,\ 
+            #sel,p0=params2gaussneg,maxfev=5000)
             
         fits_1g.append([fit1g,fit1gcov])
         fits_2g.append([fit2g,fit2gcov])
@@ -663,6 +669,10 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   date = '08092022',line = 'Ca II H',nimg = 7,
                   kernind = 1350,nrol=2,ncol=4,lamb0 = 396.85,c=2.99e5,
                   note=''):
+    
+    # plotting of the output of "fittingroutines"; can expand to beyond first
+    # few image frames.  Tested 1 Dec 2023 for pid_1_84 Ca II H but not beyond
+    # this.
     
     fig, ax = plt.subplots(2,4,figsize=(30,15))
     fig.suptitle(line+' evolution w/ fitting, '+date+note,fontsize=20)
@@ -732,21 +742,14 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
     
     return None
 
-        
-        
-            
-        
-    
-    
-    
-    
-        
-        
 
 def perclevels(bkgd_subtract_flaretime,dispersion_range,caII_low,caII_high,
                store_ten_width,store_quarter_width,store_half_width):
-    # automate
-    # only first seven steps reliable
+    
+    # Initial code, yet to be expanded to other wavelength ranges or proposals,
+    # for determining the line width at different heights along emission line
+    # profile; useful in tracking different types of broadening (or different
+    # atmospheric heights) - see Graham and Cauzzi, 2015, 2020
     
     for i in range(np.shape(bkgd_subtract_flaretime)[0]):
         sel = bkgd_subtract_flaretime[i,caII_low:caII_high,1350]-min(bkgd_subtract_flaretime[i,caII_low:caII_high,1350])
@@ -778,11 +781,12 @@ def perclevels(bkgd_subtract_flaretime,dispersion_range,caII_low,caII_high,
         
     return store_ten_width, store_quarter_width, store_half_width
 
-#co-alignment routines
-
-#averaging along line
+# Co-alignment routines
 
 def space_range(hdul1):
+    
+    # Define spatial range for co-alignment given in L1 headers
+    
     x_cent = hdul1[1].header['CRVAL2']
     y_cent = hdul1[1].header['CRVAL3']
     
@@ -799,10 +803,12 @@ def space_range(hdul1):
     arcsec_slit = np.linspace(0,nspace*x_delt,nspace)
     return x_cent, y_cent, x_delt, y_delt, x_range, y_range, arcsec_slit, nspace
 
-
-#spatial averages
-
-def spatialranges(hdul1,spatial_range,nslitpos=4):
+def vispranges(hdul1,spatial_range,nslitpos=4):
+    
+    # Define spatial and wavelength ranges for ViSP; this takes all 
+    # slit positions in a single raster scan and uses that as a second spatial
+    # axis for the "ViSP image" which will be used to co-align with VBI
+    
     slitlen = hdul1[1].header['CDELT2']*len(spatial_range) #in arcsec
     rastersize = hdul1[1].header['CDELT3']*nslitpos
     
@@ -812,6 +818,10 @@ def spatialranges(hdul1,spatial_range,nslitpos=4):
     return spatial_range2, raster_range
 
 def imgprep(path,folder1,dir_list2):
+    
+    # Prepare initial image in the ViSP set, for comparison to VBI. Could be 
+    # any, but make sure the correct timestamp
+    
     image_data_arrs0 = []
     rasterpos = []
     times = []
@@ -838,12 +848,22 @@ def imgprep(path,folder1,dir_list2):
 def line_avg(image_data_arrs0,lowind,highind,nslit,nwave):
     caiiavgs = np.zeros((nslit,nwave))
     
+    # define the boundaries (in dispersion direction) for the line and get an 
+    # "average" intensity; could also use line flux for all positions along slit?
+    # This simply gives an idea, when averaged lines from all slit positions are
+    # plotted side-by-side, for the kernel locations.  Should use a low and high
+    # index which approximately straddles the main line; Ca II H in the case of
+    # the code originally developed for pid_1_84
+    
     for i in range(nslit):
         caiiavgs[i,:] = np.mean(image_data_arrs0[i][lowind:highind,:],0)
             
     return caiiavgs
 
 def pltraster(caiiavgs,raster_range,spatial_range2,pid='pid_1_84'):
+    
+    # plot the intensity images for the ViSP scan
+    
     X,Y = np.meshgrid(raster_range,spatial_range2)
     fig,ax = plt.subplots()
     ax.pcolormesh(X,Y,np.transpose(caiiavgs),cmap='gray')
@@ -855,8 +875,10 @@ def pltraster(caiiavgs,raster_range,spatial_range2,pid='pid_1_84'):
     return None
 
 
-
 def vbi_process(path_vbi,folder1_vbi):
+    
+    # Process VBI data similarly to ViSP above; only intensity files
+    
     dir_list_vbi = os.listdir(path_vbi+folder1_vbi)
 
     dir_list2_vbi = []
@@ -893,6 +915,20 @@ def vbi_process(path_vbi,folder1_vbi):
 def plt_precoalign(vbi_X, vbi_Y, hdul1_vbi, visp_X, visp_Y, vispimg,matplotlib, 
                    dat0_vbi,pid='pid_1_84'):
     
+    # Plot VBI and ViSP, prior to co-alignment, together.  Use ginput to ID 
+    # points for similar structures.  The result of the process which this
+    # starts will be ViSP axes transformed into the VBI coordinate system; 
+    # which is still not correct, but we can use to simultaneously get ViSP
+    # and VBI in the SDO image frame
+    
+    # VBI is much higher-resolution, obviously, so easier/more effective in 
+    # comparison to appropriate SDO bandpass.  
+    
+    # Minor errors in comparison of features lead to big errors in
+    # transformation matrix, particularly farther from the features; so (1) 
+    # choose features wisely (localized, bright); (2) choose bandpasses wisely
+    # (similar atmospheric height, contribution function); (3) select points
+    # in uncaffeinated state (jitters)
 
 
     fig,ax=plt.subplots(1,2,figsize=(10,5),sharey=True)
@@ -912,6 +948,7 @@ def plt_precoalign(vbi_X, vbi_Y, hdul1_vbi, visp_X, visp_Y, vispimg,matplotlib,
     # be VERY careful in selection of points! Require basis vectors
     # for each coordinate system; points should not be
     # colinear
+    
     matplotlib.use('Qt5Agg')
     aa = plt.ginput(6,timeout = 120)
     
@@ -922,6 +959,9 @@ def plt_precoalign(vbi_X, vbi_Y, hdul1_vbi, visp_X, visp_Y, vispimg,matplotlib,
 def vbi_visp_transformation(aa, visp_X,visp_Y,nslit,nwave,vbi_X,vbi_Y,dat0_vbi,
                             vispimg,matplotlib,vbiband='H-alpha',
                             vispband='CaII H 396.8 nm',pid='pid_1_84'):
+    
+    # Simple transformation matrix between ViSP and VBI using output of ginput
+    # process in function above
     
     # visp points
     A1 = np.array(aa[1])
@@ -969,7 +1009,7 @@ def vbi_visp_transformation(aa, visp_X,visp_Y,nslit,nwave,vbi_X,vbi_Y,dat0_vbi,
     visp_X_new = new_ViSP[0,:,:]
     visp_Y_new = new_ViSP[1,:,:]
     
-    # plot new
+    # plot new axes
     
     fig,ax=plt.subplots(1,2,figsize=(10,5),sharey=True)
     ax[0].pcolormesh(vbi_X,vbi_Y,dat0_vbi,cmap='hot')
@@ -1017,6 +1057,9 @@ def query_sdo(start_time, email, cutout, matplotlib,
               wavelength = 304,
               timesamp=2,passband = '304'):
     
+    # Use sunpy Fido to query different SDO bandpasses; on 2 Dec 2023 only 304 
+    # and HMI continuum functionality, but can be expanded with a little work
+    
     if passband == '304':
         query = Fido.search(
             a.Time(start_time - 0.01*u.h, start_time + .1*u.h),
@@ -1048,8 +1091,8 @@ def query_sdo(start_time, email, cutout, matplotlib,
     
     X3,Y3 = np.meshgrid(xr,yr)
     
-    # three points (remember which features)
-    
+    # three points (remember which features - choose same features and same 
+    # order when using points_vbi later!)
 
     fig,ax = plt.subplots()
     
@@ -1065,6 +1108,8 @@ def query_sdo(start_time, email, cutout, matplotlib,
 
 def points_vbi(vbi_X,vbi_Y,dat0_vbi,matplotlib):
     
+    # VBI coordinates, same features as in query_sdo ginput 
+    
     fig,ax1 = plt.subplots()
     ax1.pcolormesh(vbi_X,vbi_Y,dat0_vbi,cmap='gray')
     #ax1.set_xticklabels([])
@@ -1079,6 +1124,10 @@ def points_vbi(vbi_X,vbi_Y,dat0_vbi,matplotlib):
     return cc
 
 def vbi_to_sdo(bb, cc, vbi_X, vbi_Y):
+    
+    # Similar transformation, using basis vectors, as in visp to vbi 
+    # transformation above
+    
     A1 = np.array(bb[0])
     B1 = np.array(bb[1])
     C1 = np.array(bb[2])
@@ -1119,6 +1168,8 @@ def vbi_to_sdo(bb, cc, vbi_X, vbi_Y):
     return vbi_X_new, vbi_Y_new, COB2, A2, A1
 
 def visp_sdo_trans(visp_X_new,visp_Y_new, COB2, A2, A1, nspace = 2544, nwave=4):
+    
+    # Finally, ViSP into the coordinate system defined by SDO
 
     ViSP_points = [visp_X_new,visp_Y_new]
     print(np.shape(ViSP_points))
@@ -1147,6 +1198,8 @@ def plt_final_coalign(vbi_X_new, vbi_Y_new, dat0_vbi2,
                       dat0_vbi, VBIpass1 = 'TiO',VBIpass2 = 
                       'H-alpha',ViSPpass = 'Ca II H',
                       obstimestr = '19 August 2022 20:42 UT',pid='pid_1_84'):
+    
+    # Plot final co-alignment
     
     fig,ax = plt.subplots(1,2,figsize = (10,5))
     ax[0].pcolormesh(vbi_X_new,vbi_Y_new,dat0_vbi2,cmap='gray')
