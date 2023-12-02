@@ -6,7 +6,7 @@ Created on Tue Nov 28 11:29:17 2023
 @author: coletamburri
 """
 
-import DKISTanalysis
+import dkistpkg_ct as DKISTanalysis
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
