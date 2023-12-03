@@ -6,15 +6,15 @@ Observatory, Laboratory for Atmospheric and Space Physics
 
 Description of script: 
     Main working functions for analysis package of DKIST data, applied first to 
-pid_1_84 ("flare patrol"), with PI Kowalski and Co-Is Cauzzi, Tristain, Notsu, 
-Kazachenko, and (unlisted) Tamburri.  Also applied to pid_2_11, with nearly 
-identical science objectives.  See READMe for details.  
-
-Includes intensity calibration, Gaussian fitting, and co-alignment routes 
-between ViSP and VBI, and, externally, SDO/HMI.  This code was developed with 
-the ViSP Ca II H and VBI blue continuum, TiO, and H-alpha channels as priority, 
-and using HMI in the continuum and 304 Angstrom bandpasses, but there is room 
-for application to other channels and science objectives.
+    pid_1_84 ("flare patrol"), with PI Kowalski and Co-Is Cauzzi, Tristain, Notsu, 
+    Kazachenko, and (unlisted) Tamburri.  Also applied to pid_2_11, with nearly 
+    identical science objectives.  See READMe for details.  
+    
+    Includes intensity calibration, Gaussian fitting, and co-alignment routes 
+    between ViSP and VBI, and, externally, SDO/HMI.  This code was developed with 
+    the ViSP Ca II H and VBI blue continuum, TiO, and H-alpha channels as priority, 
+    and using HMI in the continuum and 304 Angstrom bandpasses, but there is room 
+    for application to other channels and science objectives.
 
 
 """
