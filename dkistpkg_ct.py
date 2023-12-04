@@ -172,8 +172,7 @@ def spatialinit(path,folder1,dir_list2,lon,lat,wl):
         doppshnonrel, doppshrel
         
 def limbdarkening(wave, mu=1.0, nm=False, 
-                  directory = '/Users/coletamburri/Desktop/DKIST_Data/\
-                      Rahul_ViSP_Cal/'):
+                  directory = '/Users/coletamburri/Desktop/DKIST_Data/Rahul_ViSP_Cal/'):
     """
     Return limb-darkening factor given wavelength and viewing angle
     mu=cos(theta)
@@ -284,15 +283,46 @@ def fourstepprocess(path,folder1,dir_list2):
     return image_data_arr_arr, i_file_raster1, for_scale, times_raster1#,\
         # image_data_arr_arr_raster1, image_data_arr_arr_raster2,\
         # image-data_arr-arr_raster3, image_data_arr_arr_raster3
+        
+def multistepprocess(path,folder1,dir_list2,div=10,startstep=0):
+    
+    # Multi-step raster procesing of DKIST data; bare bones storage, no
+    # separation based on slit step, output includes all slit step positions
+    
+    # div - dividing factor, proportion of directory to search through for data
+    
+    # startstep - number of files to skip in directory before begining storage
+
+    image_data_arrs0 = []
+    rasterpos = []
+    times = []
+    
+    # extract relevant information
+    for i in range(0,round(len(dir_list2)/div),1):
+        i_file = fits.open(path+folder1+'/'+dir_list2[i+startstep])
+        times.append(i_file[1].header['DATE-BEG'])
+        i_data = i_file[1].data[0]
+        image_data_arrs0.append(i_data)
+        rasterpos.append(i_file[1].header['CRPIX3'])
+    
+    # all rasters
+    image_data_arr_arr = np.array(image_data_arrs0)
+    
+    # for intensity calibration purposes, only images from first raster pos
+    for_scale = image_data_arr_arr[0,:,:]
+    
+    return image_data_arr_arr, for_scale, rasterpos, times
 
 
-def spatialaxis(i_file_raster1):
+def spatialaxis(path,folder1,dir_list2):
     
     # find the axes of ViSP observations based on values given in L1 header;
     # spectral axis can be trusted as long as DKIST data set caveats have been
     # accounted for ( https://nso.atlassian.net/wiki/spaces/DDCHD/pages/1959985377/DKIST+Data+Set+Caveats+ViSP+VBI ).
     # Spatial coordiantes should not be trusted; only to be used for co-align
     # routines with SDO and between ViSP/VBI
+    
+    i_file_raster1 = fits.open(path+folder1+'/'+dir_list2[0])
     
     #crval1,cdelt1
     hdul1 = i_file_raster1
@@ -514,9 +544,9 @@ def widths_strengths(ew_CaII_all_fs,eqw_CaII_all_fs,width_CaII_all_fs,
         for i in range(len(scaled_flare_time)-5):
             sample_flaretime = bkgd_subtract_flaretime[i,:,j]
             foreqw = scaled_flare_time[i,:,j]
-            contwind0_1 = sample_flaretime[low0:high0]
-            contwind0_1eq = foreqw[low0:high0]
-            contwind0_1_wave = dispersion_range[low0:high0]
+            contwind0_1 = np.mean(sample_flaretime[low0:high0])
+            contwind0_1eq = np.mean(foreqw[low0:high0])
+            contwind0_1_wave = np.mean(dispersion_range[low0:high0])
             contwind1eq = np.mean(foreqw[low1:high1])
             contwind1 = np.mean(sample_flaretime[low1:high1])
             contwind1_wave = np.mean(dispersion_range[low1:high1])
@@ -624,6 +654,113 @@ def widths_strengths(ew_CaII_all_fs,eqw_CaII_all_fs,width_CaII_all_fs,
         
     return ew_CaII_all_fs, ew_hep_all_fs, eqw_CaII_all_fs, eqw_hep_all_fs,\
         width_CaII_all_fs, width_hep_all_fs
+        
+def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
+                     line_low,line_high,
+                     scaled_flare_time,bkgd_subtract_flaretime,
+                     dispersion_range,deg=6,low0=29,high0=29,low1=60,high1=150,
+                     low2=265,high2=290,low3=360,high3=400,low4=450,high4=480,
+                     low5=845,high5=870,low6=945,high6=965):
+    
+    # determine equivanet widths, effective widths, line widths for single line
+    
+    # Uses pseudo-continuum polynomial determination similar to that described
+    # in function above; see that doc for description
+    
+    avgs = []
+    for i in range(len(scaled_flare_time)):
+        snapshot = scaled_flare_time[i,:,:]
+        average = np.mean(snapshot,axis=0)
+        avgs.append(average)
+    
+    # "eq" means for use in equivalent width determination - equivalent width
+    # determination does not use the background-subtracted values, but the raw
+    # intensity-calibrated spectra (see description of effective vs. equivalent
+    # with for justification)
+    for j in range(np.shape(bkgd_subtract_flaretime)[2]):
+        for i in range(len(scaled_flare_time)-5):
+            sample_flaretime = bkgd_subtract_flaretime[i,:,j]
+            foreqw = scaled_flare_time[i,:,j]
+            contwind0_1 = np.mean(sample_flaretime[low0:high0])
+            contwind0_1eq = np.mean(foreqw[low0:high0])
+            contwind0_1_wave = np.mean(dispersion_range[low0:high0])
+            contwind1eq = np.mean(foreqw[low1:high1])
+            contwind1 = np.mean(sample_flaretime[low1:high1])
+            contwind1_wave = np.mean(dispersion_range[low1:high1])
+            contwind2eq = np.mean(foreqw[low2:high2])
+            contwind2 = np.mean(sample_flaretime[low2:high2])
+            contwind2_wave = np.mean(dispersion_range[low2:high2])
+            contwind3eq = np.mean(foreqw[low3:high3])
+            contwind3 = np.mean(sample_flaretime[low3:high3])
+            contwind3_wave = np.mean(dispersion_range[low3:high3])
+            contwind4eq = np.mean(foreqw[low4:high4])
+            contwind4 = np.mean(sample_flaretime[low4:high4])
+            contwind4_wave = np.mean(dispersion_range[low4:high4])
+            contwind5eq = np.mean(foreqw[low5:high5])
+            contwind5 = np.mean(sample_flaretime[low5:high5])
+            contwind5_wave = np.mean(dispersion_range[low5:high5])
+            contwind6eq = np.mean(foreqw[low6:high6])
+            contwind6 = np.mean(sample_flaretime[low6:high6])
+            contwind6_wave = np.mean(dispersion_range[low6:high6])
+    
+            cont_int_arrayeqw = [contwind0_1eq,contwind1eq,contwind2eq,
+                                 contwind3eq,contwind4eq,contwind5eq,contwind6eq]
+    
+            cont_int_array = [contwind0_1,contwind1,contwind2,contwind3,
+                              contwind4,contwind5,contwind6]
+            cont_int_wave_array = [contwind0_1_wave,contwind1_wave,
+                                   contwind2_wave,contwind3_wave,
+                                   contwind4_wave,contwind5_wave,
+                                   contwind6_wave]
+    
+            deg = 6
+    
+            p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
+    
+            peq = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_arrayeqw,
+                                       deg))
+    
+            nolines = p(dispersion_range)
+            nolineseq = peq(dispersion_range)
+    
+            maxind = np.argmax(sample_flaretime)
+            maxint = sample_flaretime[maxind]
+            maxcont = nolines[maxind]
+    
+            integrand = (sample_flaretime-nolines)/(maxint-maxcont)
+            normflux = np.divide(foreqw,nolineseq)
+    
+            integrand2 = 1 - normflux
+    
+            #equivalent width determination, efefctive width determinatino
+            ew_line = integrate.cumtrapz(integrand[line_low:line_high],
+                                         dispersion_range[line_low:line_high])\
+                [-1]
+            eqw_line = integrate.cumtrapz(integrand2[line_low:line_high],
+                                          dispersion_range[line_low:line_high])\
+                [-1]
+
+            ew_line_all_fs[i,j]=ew_line
+            eqw_line_all_fs[i,j]=eqw_line
+            
+            line_isolate = sample_flaretime[line_low:line_high]
+            minline = min(line_isolate)
+            maxline = max(line_isolate)
+            meanline = (maxline+minline)/2
+    
+            linemidlow, linemidlowindex = \
+                find_nearest(line_isolate[:round(len(line_isolate)/2)],meanline)
+            linemidhigh,linemidhighindex = \
+                find_nearest(line_isolate[round(len(line_isolate)/2):],meanline)
+    
+            widthAng_line = dispersion_range[line_low+\
+                                             round(len(line_isolate)/2)+\
+                                                 linemidhighindex-1]-\
+                dispersion_range[line_low+linemidlowindex-1] 
+    
+            width_line_all_fs[i,j]=widthAng_line
+        
+    return ew_line_all_fs, eqw_line_all_fs, width_line_all_fs
 
 # NOTE: Add plotting routine for widths?
 
@@ -709,7 +846,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   pid='pid_1_84',
                   date = '08092022',line = 'Ca II H',nimg = 7,
                   kernind = 1350,nrol=2,ncol=4,lamb0 = 396.85,c=2.99e5,
-                  note=''):
+                  note='',lim=0.3e6):
     
     # plotting of the output of "fittingroutines"; can expand to beyond first
     # few image frames.  Tested 1 Dec 2023 for pid_1_84 Ca II H but not beyond
@@ -764,7 +901,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
         ax.flatten()[i].plot(selwlshift,comp2fity,label='G2,C2',color=muted[6])
         #ax.flatten()[i].plot(selwl,gauss2negfity,label='Gauss2neg')
         ax.flatten()[i].legend()
-        ax.flatten()[i].axis(ymin=0,ymax=maxprofile+0.3e6)
+        ax.flatten()[i].axis(ymin=0,ymax=maxprofile+lim)
         ax.flatten()[i].axvline(0,linestyle='dotted')
         secaxx = ax.flatten()[i].secondary_xaxis('top', functions=(veltrans,wltrans))
         ax.flatten()[i].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))    
