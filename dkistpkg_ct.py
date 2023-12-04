@@ -6,15 +6,15 @@ Observatory, Laboratory for Atmospheric and Space Physics
 
 Description of script: 
     Main working functions for analysis package of DKIST data, applied first to 
-pid_1_84 ("flare patrol"), with PI Kowalski and Co-Is Cauzzi, Tristain, Notsu, 
-Kazachenko, and (unlisted) Tamburri.  Also applied to pid_2_11, with nearly 
-identical science objectives.  See READMe for details.  
-
-Includes intensity calibration, Gaussian fitting, and co-alignment routes 
-between ViSP and VBI, and, externally, SDO/HMI.  This code was developed with 
-the ViSP Ca II H and VBI blue continuum, TiO, and H-alpha channels as priority, 
-and using HMI in the continuum and 304 Angstrom bandpasses, but there is room 
-for application to other channels and science objectives.
+    pid_1_84 ("flare patrol"), with PI Kowalski and Co-Is Cauzzi, Tristain, Notsu, 
+    Kazachenko, and (unlisted) Tamburri.  Also applied to pid_2_11, with nearly 
+    identical science objectives.  See READMe for details.  
+    
+    Includes intensity calibration, Gaussian fitting, and co-alignment routes 
+    between ViSP and VBI, and, externally, SDO/HMI.  This code was developed with 
+    the ViSP Ca II H and VBI blue continuum, TiO, and H-alpha channels as priority, 
+    and using HMI in the continuum and 304 Angstrom bandpasses, but there is room 
+    for application to other channels and science objectives.
 
 
 """
@@ -33,6 +33,7 @@ import sunpy.map
 from sunpy.net import Fido
 from sunpy.net import attrs as a
 import astropy.units as u
+import astropy
 
 # from sunpy.net import Fido, attrs as a
 # import pandas as pd
@@ -126,7 +127,7 @@ def pathdef(path,folder1):
     
     return dir_list2
 
-def spatialinit(path,folder1,dir_list2,lon,lat,wl,limbdarkening):
+def spatialinit(path,folder1,dir_list2,lon,lat,wl):
     
     # initialize spatial parameters, mu angle for use in determining limb darkening
 
@@ -169,6 +170,46 @@ def spatialinit(path,folder1,dir_list2,lon,lat,wl,limbdarkening):
         
     return hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu, \
         doppshnonrel, doppshrel
+        
+def limbdarkening(wave, mu=1.0, nm=False, 
+                  directory = '/Users/coletamburri/Desktop/DKIST_Data/\
+                      Rahul_ViSP_Cal/'):
+    """
+    Return limb-darkening factor given wavelength and viewing angle
+    mu=cos(theta)
+    Arguments:
+        wave: scalar or 1D array with wavelength(s).
+    Keyword arguments:
+        mu: cosine of heliocentric viewing angle (default 1.0 -> disc centre)
+        nm: input wavelength units are nanometers (default False)
+    Returns:
+        factor: scaling factor(s) to be applied for given input wavelengths. Has
+        as many elements as `wave`.
+    Example:
+        factor = limbdarkening(630.25, mu=0.7, nm=True)
+    Author:
+        Gregal Vissers (ISP/SU 2020)
+    """
+
+    DATA_PATH = os.path.join(directory, "limbdarkening_Neckel_Labs_1994.fits")
+
+    wave = np.atleast_1d(wave)  # Ensure input is iterable
+
+    table = astropy.table.Table(fits.getdata(DATA_PATH))
+    wavetable = np.array(table['wavelength'])
+    if nm is False:
+        wavetable *= 10.
+
+    # Get table into 2D numpy array
+    Atable = np.array([ table['A0'], table['A1'], table['A2'],
+        table['A3'], table['A4'], table['A5'] ])
+    
+    factor = np.zeros((wave.size), dtype='float64')
+    for ii in range(6):
+      Aint = np.interp(wave, wavetable, Atable[ii,:])
+      factor += Aint * mu**ii
+
+    return factor[0]
 
 
 
