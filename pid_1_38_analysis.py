@@ -49,7 +49,7 @@ dir_list2 = DKISTanalysis.pathdef(path,folder1)
 lon = -27.69 #degrees
 lat = 18.29 #degrees
 
-wl = 854.2 # central wavelength, Ca II H, in nm
+wl = 854.209 # central wavelength, Ca II H, in nm
 
 # spatial coordinates
 hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu, \

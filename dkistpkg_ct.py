@@ -829,7 +829,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     fits_2g = []
     fits_2gneg = []
     
-    
+    l=0
     for i in range(nimg):
         print(i)
         selwl = dispersion_range[line_low:line_high]
@@ -856,7 +856,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     return fits_1g, fits_2g, fits_2gneg
 
 def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
-                  gaussian,times_raster1,muted,
+                  gaussian,times,muted,
                   line_low,line_high,fits_1g,fits_2g,fits_2gneg,
                   pid='pid_1_84',
                   date = '08092022',line = 'Ca II H',nimg = 7,
@@ -906,7 +906,25 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
         fit1g = fits_1g[i][0]
         fit2g = fits_2g[i][0]
         #fit2gneg = fits_2gneg[i][0]
+        
+        if i > 0 and i % (nrow*ncol) == 0:
+            secaxx = ax.flatten()[0].secondary_xaxis('top', functions=(veltrans,wltrans))
+            secaxx.set_xlabel(r'Velocity $[km\; s^{-1}]$')
+            ax.flatten()[0].set_xlabel(r' $\lambda$ - $\lambda_0$ [nm]')
+            ax.flatten()[0].set_ylabel(r'Intensity (- $I_{min}$) $[W\; cm^{-2} sr^{-1} \AA^{-1}]$')
+
+
+            
+            #plt.subplots_adjust(wspace=0.4,hspace=1.0)
+            plt.tight_layout(pad = 4)
+            fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+\
+                        pid+'/fits'+date+note+'_endatstep_'+str(i-1)+'.png')
+            fig, ax = plt.subplots(nrow,ncol,figsize=(30,15))
+            fig.suptitle(line+' evolution w/ fitting, '+date+note,fontsize=20)
+            
+            
         if len(fit2g) == 6:
+            l = i % (nrow*ncol)
             gaussfity = gaussian(selwl,fit1g[0],fit1g[1],fit1g[2])
             gauss2fity = double_gaussian(selwl,fit2g[0],fit2g[1],fit2g[2],\
                                          fit2g[3],fit2g[4],fit2g[5])
@@ -916,18 +934,20 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
             #gauss2negfity = double_gaussian(selwl,fit2gneg[0],fit2gneg[1],\
                                             # fit2gneg[2],fit2gneg[3],fit2gneg[4],
                                             # fit2gneg[5])
-        
-            ax.flatten()[i].plot(selwlshift,sel,label='data')
+            
+
+            ax.flatten()[l].plot(selwlshift,sel,label='data')
             #ax.flatten()[i].plot(selwlshift,gaussfity,label='G1')
-            ax.flatten()[i].plot(selwlshift,gauss2fity,label='G2',color=muted[2])
-            ax.flatten()[i].plot(selwlshift,comp1fity,label='G2,C1',color=muted[4])
-            ax.flatten()[i].plot(selwlshift,comp2fity,label='G2,C2',color=muted[6])
+            ax.flatten()[l].plot(selwlshift,gauss2fity,label='G2',color=muted[2])
+            ax.flatten()[l].plot(selwlshift,comp1fity,label='G2,C1',color=muted[4])
+            ax.flatten()[l].plot(selwlshift,comp2fity,label='G2,C2',color=muted[6])
             #ax.flatten()[i].plot(selwl,gauss2negfity,label='Gauss2neg')
             #ax.flatten()[i].legend()
-            ax.flatten()[i].axis(ymin=0,ymax=maxprofile+lim)
-            ax.flatten()[i].axvline(0,linestyle='dotted')
-            secaxx = ax.flatten()[i].secondary_xaxis('top', functions=(veltrans,wltrans))
-            ax.flatten()[i].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))  
+            ax.flatten()[l].axis(ymin=0,ymax=maxprofile+lim)
+            ax.flatten()[l].axvline(0,linestyle='dotted')
+            secaxx = ax.flatten()[l].secondary_xaxis('top', functions=(veltrans,wltrans))
+            ax.flatten()[l].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))  
+            ax.flatten()[l].set_title(times[i])
             
     secaxx = ax.flatten()[0].secondary_xaxis('top', functions=(veltrans,wltrans))
     secaxx.set_xlabel(r'Velocity $[km\; s^{-1}]$')
@@ -936,11 +956,11 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
 
 
     
-    plt.subplots_adjust(wspace=0.4,hspace=0.4)
+    plt.tight_layout(pad = 4)
     plt.show()
     
     fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+\
-                pid+'/fits'+date+note+'.png')
+                pid+'/fits'+date+note+'_endatstep_'+str(i)+'.png')
     
     return None
 
