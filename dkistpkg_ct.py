@@ -314,7 +314,7 @@ def multistepprocess(path,folder1,dir_list2,div=10,startstep=0):
     return image_data_arr_arr, for_scale, rasterpos, times
 
 
-def spatialaxis(path,folder1,dir_list2):
+def spatialaxis(path,folder1,dir_list2,line='Ca II H'):
     
     # find the axes of ViSP observations based on values given in L1 header;
     # spectral axis can be trusted as long as DKIST data set caveats have been
@@ -332,6 +332,11 @@ def spatialaxis(path,folder1,dir_list2):
     
     dispersion_range = np.linspace(centerlambda-deltlambda*(nlambda-1)/2,
                                    centerlambda+deltlambda*(nlambda-1)/2,nlambda)
+    
+    if line == 'Ca II 8542':
+        dispersion_range = []
+        for i in range(nlambda):
+            dispersion_range.append(853.1749+1.88966e-3*i-7.506692e-9*i*i)
     
     centerspace = hdul1[1].header['CRVAL2']
     deltspace = hdul1[1].header['CDELT2'] #this actually is fine
@@ -824,18 +829,28 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     fits_2g = []
     fits_2gneg = []
     
+    
     for i in range(nimg):
+        print(i)
         selwl = dispersion_range[line_low:line_high]
         sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
             min(bkgd_subtract_flaretime[i,line_low:line_high,kernind])
         
-        fit1g, fit1gcov = curve_fit(gaussian,selwl,sel,p0=paramsgauss)
-        fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, p0=params2gauss)
-        #fit2gneg, fit2gnegcov = curve_fit(double_gaussian,selwl,\ 
-            #sel,p0=params2gaussneg,maxfev=5000)
+        try:
+            fit1g, fit1gcov = curve_fit(gaussian,selwl,sel,p0=paramsgauss)
+            fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, p0=params2gauss,
+                                        maxfev=1500)
+            #fit2gneg, fit2gnegcov = curve_fit(double_gaussian,selwl,\ 
+                #sel,p0=params2gaussneg,maxfev=5000)
+                
+            fits_1g.append([fit1g,fit1gcov])
+            fits_2g.append([fit2g,fit2gcov])
             
-        fits_1g.append([fit1g,fit1gcov])
-        fits_2g.append([fit2g,fit2gcov])
+        except RuntimeError:
+            fits_1g.append(['NaN','NaN'])
+            fits_2g.append(['NaN','NaN'])
+            continue
+        
         #fits_2gneg.append([fit2gneg,fit2gnegcov])
             
     return fits_1g, fits_2g, fits_2gneg
@@ -845,17 +860,25 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   line_low,line_high,fits_1g,fits_2g,fits_2gneg,
                   pid='pid_1_84',
                   date = '08092022',line = 'Ca II H',nimg = 7,
-                  kernind = 1350,nrol=2,ncol=4,lamb0 = 396.85,c=2.99e5,
+                  kernind = 1350,nrow=2,ncol=4,lamb0 = 396.85,c=2.99e5,
                   note='',lim=0.3e6):
     
     # plotting of the output of "fittingroutines"; can expand to beyond first
     # few image frames.  Tested 1 Dec 2023 for pid_1_84 Ca II H but not beyond
     # this.
     
-    fig, ax = plt.subplots(2,4,figsize=(30,15))
+    path = '/Users/coletamburri/Desktop/DKIST_analysis_package/'+\
+                pid+'/'
+    if os.path.isdir(path) == False:
+        os.mkdir(path)
+        
+    fig, ax = plt.subplots(nrow,ncol,figsize=(30,15))
     fig.suptitle(line+' evolution w/ fitting, '+date+note,fontsize=20)
     
     selwl = dispersion_range[line_low:line_high]
+    
+    if type(selwl) == list:
+        selwl = np.array(selwl)
     
     selwlshift = selwl-lamb0
     
@@ -883,28 +906,29 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
         fit1g = fits_1g[i][0]
         fit2g = fits_2g[i][0]
         #fit2gneg = fits_2gneg[i][0]
+        if len(fit2g) == 6:
+            gaussfity = gaussian(selwl,fit1g[0],fit1g[1],fit1g[2])
+            gauss2fity = double_gaussian(selwl,fit2g[0],fit2g[1],fit2g[2],\
+                                         fit2g[3],fit2g[4],fit2g[5])
+                
+            comp1fity = gaussian(selwl,fit2g[0],fit2g[1],fit2g[2])
+            comp2fity = gaussian(selwl,fit2g[3],fit2g[4],fit2g[5])
+            #gauss2negfity = double_gaussian(selwl,fit2gneg[0],fit2gneg[1],\
+                                            # fit2gneg[2],fit2gneg[3],fit2gneg[4],
+                                            # fit2gneg[5])
         
-        gaussfity = gaussian(selwl,fit1g[0],fit1g[1],fit1g[2])
-        gauss2fity = double_gaussian(selwl,fit2g[0],fit2g[1],fit2g[2],\
-                                     fit2g[3],fit2g[4],fit2g[5])
+            ax.flatten()[i].plot(selwlshift,sel,label='data')
+            #ax.flatten()[i].plot(selwlshift,gaussfity,label='G1')
+            ax.flatten()[i].plot(selwlshift,gauss2fity,label='G2',color=muted[2])
+            ax.flatten()[i].plot(selwlshift,comp1fity,label='G2,C1',color=muted[4])
+            ax.flatten()[i].plot(selwlshift,comp2fity,label='G2,C2',color=muted[6])
+            #ax.flatten()[i].plot(selwl,gauss2negfity,label='Gauss2neg')
+            #ax.flatten()[i].legend()
+            ax.flatten()[i].axis(ymin=0,ymax=maxprofile+lim)
+            ax.flatten()[i].axvline(0,linestyle='dotted')
+            secaxx = ax.flatten()[i].secondary_xaxis('top', functions=(veltrans,wltrans))
+            ax.flatten()[i].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))  
             
-        comp1fity = gaussian(selwl,fit2g[0],fit2g[1],fit2g[2])
-        comp2fity = gaussian(selwl,fit2g[3],fit2g[4],fit2g[5])
-        #gauss2negfity = double_gaussian(selwl,fit2gneg[0],fit2gneg[1],\
-                                        # fit2gneg[2],fit2gneg[3],fit2gneg[4],
-                                        # fit2gneg[5])
-    
-        ax.flatten()[i].plot(selwlshift,sel,label='data')
-        #ax.flatten()[i].plot(selwlshift,gaussfity,label='G1')
-        ax.flatten()[i].plot(selwlshift,gauss2fity,label='G2',color=muted[2])
-        ax.flatten()[i].plot(selwlshift,comp1fity,label='G2,C1',color=muted[4])
-        ax.flatten()[i].plot(selwlshift,comp2fity,label='G2,C2',color=muted[6])
-        #ax.flatten()[i].plot(selwl,gauss2negfity,label='Gauss2neg')
-        ax.flatten()[i].legend()
-        ax.flatten()[i].axis(ymin=0,ymax=maxprofile+lim)
-        ax.flatten()[i].axvline(0,linestyle='dotted')
-        secaxx = ax.flatten()[i].secondary_xaxis('top', functions=(veltrans,wltrans))
-        ax.flatten()[i].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))    
     secaxx = ax.flatten()[0].secondary_xaxis('top', functions=(veltrans,wltrans))
     secaxx.set_xlabel(r'Velocity $[km\; s^{-1}]$')
     ax.flatten()[0].set_xlabel(r' $\lambda$ - $\lambda_0$ [nm]')

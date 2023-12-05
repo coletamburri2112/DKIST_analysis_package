@@ -144,9 +144,9 @@ storemu2 = []
 storesig2 = []
 
 
-sel = bkgd_subtract_flaretime[0,caII_low:caII_high,sliceind]-\
-    min(bkgd_subtract_flaretime[0,caII_low:caII_high,sliceind])
-selwl = dispersion_range[caII_low:caII_high]
+sel = bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,sliceind]-\
+    min(bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,sliceind])
+selwl = dispersion_range[caII_8542_low:caII_8542_high]
         
 # width determination
 store_ten_width = []
