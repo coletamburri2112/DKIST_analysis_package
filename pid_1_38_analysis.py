@@ -62,42 +62,38 @@ clv_corr = DKISTanalysis.limbdarkening(wl, mu=mu, nm=True)
     # correct wl units)
     
 # process multi-step raster
-image_data_arr_arr, for_scale, rasterpos, times = \
+image_data_arr_arr, rasterpos, times = \
     DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=10,startstep=0)
     
 # spatial and dispersion axes for single observation (single slit step)
 spatial_range, dispersion_range = \
     DKISTanalysis.spatialaxis(path,folder1,dir_list2)
+    
+#qs calibration
+wlsel, ilamsel = DKISTanalysis.load_fts(dispersion_range)
+
+space_and_time_averaged_qs = DKISTanalysis.comp_fts_to_qs(wlsel,ilamsel,dispersion_range, image_data_arr_arr, lowint = -100,highint=-1,timelow=0,timehigh=5)
+
+new_dispersion_range, rat = DKISTanalysis.calib_qs_shift(wlsel,ilamsel,dispersion_range,space_and_time_averaged_qs, 853.6174,853.801,[225,325],[246,353])
+
+calibration, calibrated_qs = DKISTanalysis.get_calibration_singleval(new_dispersion_range,space_and_time_averaged_qs,wlsel,ilamsel,limbdark_fact=clv_corr)
+
+DKISTanalysis.plot_calibration(new_dispersion_range,calibrated_qs,wlsel,ilamsel,pid='pid_1_38')
 
 # load QS intensity calibration results here!
-nonflare_average = np.load('/Users/coletamburri/Desktop/'+\
-                           'bolow_nonflare_average.npy')
-nonflare_stdevs = np.load('/Users/coletamburri/Desktop/'+\
-                          'bolow_nonflare_stdevs.npy')
-nonflare_fitvals = np.load('/Users/coletamburri/Desktop/'+\
-                           'bolow_nonflare_fit_vals.npy')
-nonflare_multfact = np.load('/Users/coletamburri/Desktop/'+\
-                            'bolow_nonflare_mult_fact.npy')
+nonflare_average = calibrated_qs
+
+nonflare_multfact = np.full(len(dispersion_range), calibration[0])
 
 # intensity calibration, background subtraction                            
 scaled_flare_time, bkgd_subtract_flaretime = \
-    DKISTanalysis.scaling(for_scale, nonflare_multfact, clv_corr,
+    DKISTanalysis.scaling(image_data_arr_arr, nonflare_multfact, clv_corr,
                           nonflare_average)
 
 # plot intensity calibrated, background-subtracted spectra
-DKISTanalysis.pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,
+DKISTanalysis.pltsubtract(new_dispersion_range,nonflare_average,scaled_flare_time,
                           muted)
 
-# variation in intensity value corresponding to wavelengths; PTE; to test
-# for variations in pseudo-continuum.  If PTE high, cannot be explained by the
-# solar activity difference between quiet sun and flare-time
-
-# comment out if don't need PTE (shouldn't, usually)
-# stdevs_flaretime, ptes_flaretime = \
-    # DKISTanalysis.deviations(bkgd_subtract_flaretime,nonflare_average,
-                             # nonflare_stdevs)
-
-# DKISTanalysis.pltptes(ptes_flaretime,image_data_arr_arr_raster1)
 
 # equivalent widths, effective widths, widths
 caII_8542_low = 500
@@ -107,7 +103,7 @@ caII_8542_high = 600
 sliceind = 1600
 
 # put bkgd_subtract_flaretime here, when ready
-sample_flaretime = image_data_arr_arr[0,:,sliceind]
+sample_flaretime = bkgd_subtract_flaretime[0,:,sliceind]
 
 # perform following line only if need to calculate continuum window 
 # independently of width determiation; 
@@ -154,14 +150,14 @@ store_quarter_width = []
 store_half_width = []
 
 store_ten_width, store_quarter_width, store_half_width = \
-    DKISTanalysis.perclevels(bkgd_subtract_flaretime,dispersion_range,caII_low,
-                             caII_high,store_ten_width,store_quarter_width,
+    DKISTanalysis.perclevels(bkgd_subtract_flaretime,dispersion_range,caII_8542_low,
+                             caII_8542_high,store_ten_width,store_quarter_width,
                              store_half_width)
     
 # output fit parameters
 fits_1g,fits_2g,fits_2gneg = \
     DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,dispersion_range,
-                                  times_raster1, caII_8542_low, caII_8542_high,
+                                  times, caII_8542_low, caII_8542_high,
                                   DKISTanalysis.double_gaussian, 
                                   DKISTanalysis.gaussian, 
                                   selwl,sel,[1.1,854.28,0.05],
@@ -172,10 +168,10 @@ fits_1g,fits_2g,fits_2gneg = \
 # plot results of Gaussian fitting
 DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range,
                             DKISTanalysis.double_gaussian,
-                            DKISTanalysis.gaussian,times_raster1,muted,caII_8542_low,caII_8542_high,fits_1g,fits_2g,fits_2gneg,
+                            DKISTanalysis.gaussian,times,muted,caII_8542_low,caII_8542_high,fits_1g,fits_2g,fits_2gneg,
                             pid='pid_1_38', date = '04202022',line = 'Ca 854.2',
                             nimg = 7, nrol=2,ncol=4,
-                            note=', first try pid_1_38',lim=0.1,lamb0=854.2,kernind=1600)
+                            note=', first try pid_1_38',lim=0.1,lamb0=854.209,kernind=1600)
     
 
 

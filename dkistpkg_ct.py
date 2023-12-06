@@ -34,6 +34,8 @@ from sunpy.net import Fido
 from sunpy.net import attrs as a
 import astropy.units as u
 import astropy
+from astropy.table import Table
+from scipy.optimize import differential_evolution
 
 # from sunpy.net import Fido, attrs as a
 # import pandas as pd
@@ -82,6 +84,28 @@ def numgreaterthan(array,value):
         if i > value:
             count = count + 1
     return count
+
+# for calibration
+def gaussian_for_calib(x, A, mu, sigma, baseline):
+    return A * np.exp(-(x - mu)**2 / (2 * sigma**2))+ baseline
+
+def fitline(xdata, ydata, plot='True'):
+	#Gaussian fit
+	params, covariance = curve_fit(gaussian_for_calib, xdata, ydata, p0=[-0.2, np.mean(xdata), 1,0.4])
+	a,b,c,d = params
+	xfit  = np.linspace(xdata[0],xdata[-1], 1000)
+	yfit = gaussian_for_calib(xfit, a,b,c,d)
+
+	w0 = xfit[np.argmin(yfit)]
+	print(' MINIMA loc--->',w0)
+	
+	if plot=='True':
+		plt.plot(xdata, ydata, '.')
+		plt.plot(xfit, yfit)
+		plt.plot([w0,w0], [yfit.min()-0.1, yfit.max()], color='gray')
+		plt.ylim(ydata.min()-0.03, ydata.max()+0.03)
+
+	return xfit, yfit, w0
 
 
 def color_muted2():
@@ -307,11 +331,9 @@ def multistepprocess(path,folder1,dir_list2,div=10,startstep=0):
     
     # all rasters
     image_data_arr_arr = np.array(image_data_arrs0)
+
     
-    # for intensity calibration purposes, only images from first raster pos
-    for_scale = image_data_arr_arr[0,:,:]
-    
-    return image_data_arr_arr, for_scale, rasterpos, times
+    return image_data_arr_arr, rasterpos, times
 
 
 def spatialaxis(path,folder1,dir_list2,line='Ca II H'):
@@ -349,7 +371,7 @@ def spatialaxis(path,folder1,dir_list2,line='Ca II H'):
        
 
 def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
-            limbd = 1):
+            limbd = 1.0,end=5):
     # Scaling relative to QS values.  For this, require inputs of "nonflare" -
     # this can take the form of off-kernel observations.  In our case, was a disk
     # center observation, hence the allowance for limb darkening correction.  
@@ -376,7 +398,7 @@ def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
             elif limbd == 0:
                 scaled_flare_time[i,:,k] = nonflare_multfact*for_scale[i,:,k]              
             
-    end = 5
+    
     bkgd_subtract_flaretime = np.zeros(np.shape(for_scale))
 
     # Subtracted averaged, scaled data cube 
@@ -1450,6 +1472,212 @@ def plt_final_coalign(vbi_X_new, vbi_Y_new, dat0_vbi2,
     
     return None
 
+def load_fts(dispersion_range):
+    # Load disk-center, quiet sun profile from Neckel and Hamburg
+    # atlast
+    
+    path = '/Users/coletamburri/Desktop/DKIST_Data/speclab-python/cal_data/'
+    filename = 'neckel.hamburg.atlas.disk_center_intensity.cgs.ecsv'
+    
+    ecsv_content = path+filename
+    
+    disk_center_ilam = Table.read(ecsv_content,format='ascii.ecsv')
+    
+    wl = disk_center_ilam['wl_ang']
+    ilam = disk_center_ilam['ilam_cgs']
+    
+    sel = np.where((wl>np.min(dispersion_range)*10) & \
+                   (wl<np.max(dispersion_range)*10)) # in A
+        
+    wlsel = np.take(wl,sel)[0]
+    ilamsel = np.take(ilam,sel)[0]
+        
+    return wlsel, ilamsel
+
+def comp_fts_to_qs(wlsel, ilamsel, dispersion_range, qs_obs,lowint=0, highint=-1,
+                   timelow = 0, timehigh = -1):
+    
+    # qs_obs is the observations for quiet sun - average this over
+    # the time dimension, and then the spatial dimension, to get an averaged
+    # estimate of the quiet sun
+    
+    # timelow and timehigh are indices where we are sure that observations
+    # are quiet sun; lowint and highint are the spatial dimension of this
+    
+    # first restrict observations to region which is definitely quiet sun
+    
+    qs_sel = qs_obs[timelow:timehigh,:,lowint:highint]
+    
+    time_averaged_qs = np.mean(qs_sel,axis=0)
+    
+    space_and_time_averaged_qs = np.mean(time_averaged_qs,axis=1)
+    
+    fig,ax = plt.subplots()
+    
+    lns1 = ax.plot(dispersion_range,space_and_time_averaged_qs,color='red',label='DKIST')
+    ax0 = ax.twinx()
+    lns2 = ax0.plot(wlsel/10,ilamsel/10,label='Atlas')
+    ax.legend()
+    ax.grid()
+    ax.set_xlabel('Wavelength [nm]',fontsize=13)
+    ax.set_ylabel('Non-Flare Estimate [cts]',fontsize=13)
+    ax0.set_ylabel(r'Disk Center Intensity [$W/cm^2/sr/\mathring A$]',fontsize=13)
+    ax.set_title('Observations and Flare Atlas',fontsize=20)
+    lns = lns1+lns2
+    
+    labs = [l.get_label() for l in lns]
+    ax.legend(lns, labs, loc=0)
+    
+    plt.show()
+    
+    return space_and_time_averaged_qs
+
+def calib_qs_shift(wlsel, ilamsel, dispersion_range, space_and_time_averaged_qs,
+             absline1, absline2, indmins, indmaxs):
+    
+
+    dispersion_range = np.array(dispersion_range)
+    shiftsel_obs1 = np.where((dispersion_range>dispersion_range[indmins[0]]) & (dispersion_range<dispersion_range[indmaxs[0]]))
+    shiftsel_obs2 = np.where((dispersion_range>dispersion_range[indmins[1]]) & (dispersion_range<dispersion_range[indmaxs[1]]))
+    
+    wavesel_obs1 = np.take(dispersion_range,shiftsel_obs1)[0]
+    fluxsel_obs1 = np.take(space_and_time_averaged_qs,shiftsel_obs1)[0]
+    
+    wavesel_obs2 = np.take(dispersion_range,shiftsel_obs2)[0]
+    fluxsel_obs2 = np.take(space_and_time_averaged_qs,shiftsel_obs2)[0]
+
+    pixsel_obs1 = np.arange(0, wavesel_obs1.shape[0])
+    pixsel_obs2 = np.arange(0, wavesel_obs2.shape[0])
+    
+    xfit1, yfit1, w0_1 = fitline(pixsel_obs1,fluxsel_obs1)
+    xfit2, yfit2, w0_2 = fitline(pixsel_obs2,fluxsel_obs2)
+    
+    dw1 = w0_1-absline1
+    dw2 = w0_2-absline2
+    
+    dt = absline2 - absline1
+
+    corr1 = w0_1 + indmins[0]
+    corr2 = w0_2 + indmins[1]
+    
+    obsdiff = corr2 - corr1
+    
+    #change per nm
+    rat = dt/obsdiff
+    
+    print('nm per pix:',rat)
+    
+    new_dispersion_range = (np.arange(0,len(dispersion_range))-corr1)*rat + absline1
+    
+    return new_dispersion_range, rat
+
+def get_calibration_singleval(wave_obs, spec_obs, wave_atlas, spec_atlas, 
+                              limbdark_fact = 1.0, wave_idx=None, extra_weight=20., bounds=None):
+    """
+    Get calibration offsets from fitting `spec_obs` to `spec_atlas`, assuming
+    wavelength grids `wave_obs` and `wave_atlas`
+    Arguments:
+        wave_obs: 1D array with observed wavelengths. Must be of same size as
+            `spec_obs`.
+        spec_obs: 1D array with observed intensities.
+        wave_atlas: 1D array with wavelengths corresponding to `spec_atlas`.
+        spec_atlas: 1D array with atlas intensity profile (e.g. from
+            `ISpy.spec.atlas`)
+    Keyword arguments:
+        limbdark_fact: default 1.0 (i.e. disk center), mulitplicative factor to
+            divide observations by to account for limb darkening
+        wave_idx: wavelength indices that will get `extra_weight` during while
+            fitting the intensity profile (default None -> all wavelengths get
+            equal weight)
+        extra_weight: amount of extra weight to give selected wavelength
+            positions as specified by `wave_idx` (default 20)
+        bounds: list of tuples [(ifact_low, ifact_upp), (woff_low, woff_upp)]
+            suggesting lower and upper bounds for fitting the intensity factor
+            and wavelength offset (defaults to 1/50th and 50 times the fraction
+            of `spec_atlas` to `spec_obs` for ifact, and ±0.3 for woff)
+    Returns:
+        calibration: 2-element array [ifact, woff] with multiplication factor
+        and wavelength offset to be applied to `spec_obs` and `wave_obs`
+        respectively
+    Author: Carlos Diaz Baso, Gregal Vissers (ISP/SU 2020), minor modifications
+        from Cole Tamburri and Rahul Yadav (CU Boulder/NSO 2023)
+    """
+    if wave_idx is None:
+        wave_idx = np.arange(wave_obs.size)
+    else:
+        wave_idx = np.atleast_1d(wave_idx)
+
+    # Correct for limb-darkening if profile to calibrate on is not from
+    # disc centre (and presumably at same mu as observations)
+    spec_obs = spec_obs/limbdark_fact
+    
+    weights = np.ones_like(wave_obs)
+    if wave_idx.size is not wave_obs.size:
+        weights[wave_idx] = extra_weight
+
+    def func_to_optimise(x):
+        x0 = x[0]
+        x1 = x[1]
+        ospec = spec_obs * x0
+        atlas = np.interp(wave_obs, wave_atlas-x1, spec_atlas)
+        chi2 = np.sum( (atlas-ospec)**2 * weights)
+        return chi2
+
+    if bounds is None:
+        bounds = [(spec_atlas[0]/spec_obs[0]*0.05, spec_atlas[0]/spec_obs[0]*50.), (-0.3, 0.3)]
+    optim = differential_evolution(func_to_optimise, bounds)
+    calibration = optim.x
+    
+    calibrated_qs = spec_obs * calibration[0]
+
+    return calibration, calibrated_qs
+
+# write calibration function for polynomial-fitting intensity calibration
+def get_calibration_poly():
+    calibration = []
+    calibrated_qs = []
+    
+    return calibration, calibrated_qs
+
+def plot_calibration(new_dispersion_range, calibrated_qs, wlsel, ilamsel,
+                     pid='pid_1_84'):
+    
+    fig,ax = plt.subplots()
+    
+    lns1 = ax.plot(new_dispersion_range,calibrated_qs,color='red',label='DKIST')
+    ax0 = ax.twinx()
+    lns2 = ax0.plot(wlsel/10,ilamsel/10,label='Atlas')
+    ax.legend()
+    ax.grid()
+    ax.set_xlabel('Wavelength [nm]',fontsize=13)
+    ax.set_ylabel('Calibrated Intensity [$W/cm^2/sr/\mathring A$]',fontsize=13)
+    ax0.set_ylabel(r'Disk Center Intensity [$W/cm^2/sr/\mathring A$]',fontsize=13)
+    ax.set_title('Calibrated Quiet Sun Intensity',fontsize=20)
+    lns = lns1+lns2
+    
+    labs = [l.get_label() for l in lns]
+    ax.legend(lns, labs, loc=0)
+    
+    plt.show()
+    
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+\
+                '/pltprofile.png')
+    
+    return None
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+        
+    
+
+    
 
 
 
