@@ -49,7 +49,7 @@ dir_list2 = DKISTanalysis.pathdef(path,folder1)
 lon = -27.69 #degrees
 lat = 18.29 #degrees
 
-wl = 854.209 # central wavelength, Ca II H, in nm
+wl = 854.209 # central wavelength, Ca II 854.209, in nm
 
 # spatial coordinates
 hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu, \
@@ -61,24 +61,55 @@ clv_corr = DKISTanalysis.limbdarkening(wl, mu=mu, nm=True)
     # for Ca II H (require mu value for determination, be sure to specify
     # correct wl units)
     
-# process multi-step raster
+startstepqs = 0
+startstepflare = 200
+
+# process multi-step raster - for qs time
+image_data_arr_arr_qs, rasterpos_qs, times_qs = \
+    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=10,
+                                   startstep=startstepqs)
+    
+# process multi-step raster - flaretime
 image_data_arr_arr, rasterpos, times = \
-    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=10,startstep=0)
+    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=5,
+                                   startstep=startstepflare)
     
 # spatial and dispersion axes for single observation (single slit step)
 spatial_range, dispersion_range = \
-    DKISTanalysis.spatialaxis(path,folder1,dir_list2)
+    DKISTanalysis.spatialaxis(path,folder1,dir_list2,line='Ca II 8542')
     
 #qs calibration
 wlsel, ilamsel = DKISTanalysis.load_fts(dispersion_range)
 
-space_and_time_averaged_qs = DKISTanalysis.comp_fts_to_qs(wlsel,ilamsel,dispersion_range, image_data_arr_arr, lowint = -100,highint=-1,timelow=0,timehigh=5)
+wlsel = wlsel/10
+space_and_time_averaged_qs = \
+    DKISTanalysis.comp_fts_to_qs(wlsel,ilamsel,dispersion_range, 
+                                 image_data_arr_arr_qs, lowint = -100,highint=-1,
+                                 timelow=0,timehigh=5)
 
-new_dispersion_range, rat = DKISTanalysis.calib_qs_shift(wlsel,ilamsel,dispersion_range,space_and_time_averaged_qs, 853.6174,853.801,[225,325],[246,353])
+# telluric lines for comparison 
+line1 = 853.6174
+line2 = 854.8124
 
-calibration, calibrated_qs = DKISTanalysis.get_calibration_singleval(new_dispersion_range,space_and_time_averaged_qs,wlsel,ilamsel,limbdark_fact=clv_corr)
+# indices of telluric lines in spectrum - lower
+lowinds = [225,861]
 
-DKISTanalysis.plot_calibration(new_dispersion_range,calibrated_qs,wlsel,ilamsel,pid='pid_1_38')
+# indices of telluric lines in spectrum - upper
+highinds = [246,880]
+
+new_dispersion_range, rat = \
+    DKISTanalysis.calib_qs_shift(wlsel,ilamsel,dispersion_range,
+                                 space_and_time_averaged_qs, 
+                                 line1,line2,lowinds,highinds)
+
+calibration, calibrated_qs,new_dispersion_range2= \
+    DKISTanalysis.get_calibration_singleval(dispersion_range,\
+                                            space_and_time_averaged_qs,\
+                                                wlsel,ilamsel,\
+                                                    limbdark_fact=clv_corr)
+
+DKISTanalysis.plot_calibration(new_dispersion_range2,calibrated_qs,wlsel,ilamsel,
+                               pid='pid_1_38')
 
 # load QS intensity calibration results here!
 nonflare_average = calibrated_qs
@@ -90,35 +121,44 @@ scaled_flare_time, bkgd_subtract_flaretime = \
     DKISTanalysis.scaling(image_data_arr_arr, nonflare_multfact, clv_corr,
                           nonflare_average)
 
-# plot intensity calibrated, background-subtracted spectra
-DKISTanalysis.pltsubtract(new_dispersion_range,nonflare_average,scaled_flare_time,
-                          muted)
-
 
 # equivalent widths, effective widths, widths
+caII_8542_low_foravg = 535
+caII_8542_high_foravg = 565
+
 caII_8542_low = 500
 caII_8542_high = 600
 
-# spatial index corresponding to part of observation of interest
-sliceind = 1600
+spacelow = 1200
+spacehigh = 2000
+
+#indices of max intensity - presumably spatial indices of flare kernel
+maxindices = DKISTanalysis.maxintind(new_dispersion_range2,image_data_arr_arr,caII_8542_low_foravg,caII_8542_high_foravg,spacelow,spacehigh)
+
+# plot intensity calibrated, background-subtracted spectra
+DKISTanalysis.pltsubtract(new_dispersion_range2,nonflare_average,scaled_flare_time,
+                          muted,maxindices,pid='pid_1_38')
+
+
+
+
+
 
 # put bkgd_subtract_flaretime here, when ready
-sample_flaretime = bkgd_subtract_flaretime[0,:,sliceind]
+sample_flaretime = bkgd_subtract_flaretime[0,:,maxindices[0]]
 
 # perform following line only if need to calculate continuum window 
 # independently of width determiation; 
 # exists within width determination script as well
 
 #nolines, cont_int_array, cont_int_wave_array = \
-    # DKISTanalysis.contwind(sample_flaretime,dispersion_range,maxinds,avgs,
+    # DKISTanalysis.contwind(sample_flaretime,dispersion_range,maxindices,avgs,
                            # low,high)
 
 # line widths, strengths initial arrays
 ew_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
 eqw_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
 width_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
-
-maxinds = []
 
 # line widths, strength determination
 ew_CaII_all_fs, eqw_CaII_all_fs,\
@@ -140,8 +180,8 @@ storemu2 = []
 storesig2 = []
 
 
-sel = bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,sliceind]-\
-    min(bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,sliceind])
+sel = bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,maxindices[0]]-\
+    min(bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,maxindices[0]])
 selwl = dispersion_range[caII_8542_low:caII_8542_high]
         
 # width determination
@@ -150,28 +190,28 @@ store_quarter_width = []
 store_half_width = []
 
 store_ten_width, store_quarter_width, store_half_width = \
-    DKISTanalysis.perclevels(bkgd_subtract_flaretime,dispersion_range,caII_8542_low,
+    DKISTanalysis.perclevels(bkgd_subtract_flaretime,new_dispersion_range2,caII_8542_low,
                              caII_8542_high,store_ten_width,store_quarter_width,
                              store_half_width)
     
 # output fit parameters
 fits_1g,fits_2g,fits_2gneg = \
-    DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,dispersion_range,
+    DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,new_dispersion_range2,
                                   times, caII_8542_low, caII_8542_high,
                                   DKISTanalysis.double_gaussian, 
                                   DKISTanalysis.gaussian, 
                                   selwl,sel,[1.1,854.28,0.05],
-                                  [.4,854.275,0.025,0.4,854.295,0.025],
+                                  [.3e6,854.2,0.007,.6e6,854.22,0.02],
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
-                                  pid='pid_1_38', date = '04/20/2022',
-                                  line = 'Ca II 854.2',nimg = 7, kernind = sliceind)
+                                  maxindices,pid='pid_1_38', date = '04/20/2022',
+                                  line = 'Ca II 854.2',nimg = 50)
 # plot results of Gaussian fitting
-DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range,
+DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,new_dispersion_range2,
                             DKISTanalysis.double_gaussian,
                             DKISTanalysis.gaussian,times,muted,caII_8542_low,caII_8542_high,fits_1g,fits_2g,fits_2gneg,
-                            pid='pid_1_38', date = '04202022',line = 'Ca 854.2',
-                            nimg = 7, nrol=2,ncol=4,
-                            note=', first try pid_1_38',lim=0.1,lamb0=854.209,kernind=1600)
+                            maxindices,pid='pid_1_38', date = '04202022',line = 'Ca 854.2',
+                            nimg = 50, nrow=4,ncol=5,
+                            note=', post_subtract',lim=0.1,lamb0=854.209)
     
 
 

@@ -404,23 +404,24 @@ def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
     # Subtracted averaged, scaled data cube 
     # from each time step in scaled data cube
     for i in range(np.shape(scaled_flare_time)[0]):
-        bkgd_subtract_flaretime[i,end:,:] = scaled_flare_time[i,end:,:]-nonflare_average[:-end,:]
+        for j in range(np.shape(scaled_flare_time)[2]):
+            bkgd_subtract_flaretime[i,end:,j] = scaled_flare_time[i,end:,j]-nonflare_average[:-end]
         
     return scaled_flare_time, bkgd_subtract_flaretime
     
                             
-def pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,muted,end=5,pid='pid_1_84'):
+def pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,muted,indexs,end=5,pid='pid_1_84'):
     
     # plotting routines to compare flare-time with non-flare spectra
     fig,ax = plt.subplots(figsize=(10,5))
-    ax.plot(dispersion_range[end:]*10,nonflare_average[:-end,1350],\
+    ax.plot(dispersion_range[end:]*10,nonflare_average[:-end],\
             color=muted[4],label='Non-Flare')
-    ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,1350],\
+    ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]],\
             color=muted[7],label='Flare-Time')
-    ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,1350]-\
-            nonflare_average[:-end,1350],color=muted[6],label='Flare-Only')
+    ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]]-\
+            nonflare_average[:-end],color=muted[6],label='Flare-Only')
     ax.grid()
-    ax.set_ylim([0,5e6])
+    #ax.set_ylim([0,5e6])
     ax.legend(loc=0)
     ax.set_title('Non-Flare Estimate vs. Flare-time ',fontsize=25)
     ax.set_xlabel(r'Wavelength [$\mathring A$]',fontsize=15)
@@ -516,8 +517,6 @@ def contwind(sample_flaretime,dispersion_range,maxinds,scaled_flare_time,
         average = np.mean(snapshot,axis=0)
         avgs.append(average)
     
-    maxind = np.argmax(avgs[i][caII_low:caII_high])
-    maxinds.append(maxind)
     contwind0_1 = sample_flaretime[low0:high0]
     contwind0_1_wave = dispersion_range[low0:high0]
     contwind1 = np.mean(sample_flaretime[low1:high1])
@@ -836,9 +835,8 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
 def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                     times_raster1, line_low, line_high,
                     double_gaussian, gaussian, selwl,sel,paramsgauss,
-                    params2gauss,params2gaussneg,pid='pid_1_84',
-                    date = '08/09/2022',line = 'Ca II H',nimg = 7,
-                    kernind = 1350):
+                    params2gauss,params2gaussneg,maxinds,pid='pid_1_84',
+                    date = '08/09/2022',line = 'Ca II H',nimg = 7):
     # More flexible line fitting routines; currently for Ca II H as observed
     # in pid_1_84, but flexible for application to other lines.  Currently also
     # only includes functinoality for single Gaussian and double Gaussian fits;
@@ -852,13 +850,42 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     fits_2gneg = []
     
     l=0
+    j=0
+    # first iteration. Use this as guide for the fit parameters to follow
+    for j in range(nimg):
+        kernind = maxinds[j]
+        if l == 0:
+            selwl = dispersion_range[line_low:line_high]
+            sel = bkgd_subtract_flaretime[j,line_low:line_high,kernind]-\
+                min(bkgd_subtract_flaretime[j,line_low:line_high,kernind]) 
+            try:
+                fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, p0=params2gauss,
+                                            maxfev=1500)
+                
+                if fit2g[0]/fit2g[3] > 1 or np.abs(fit2g[4]-fit2g[1])>0.04:
+                    continue
+                else:
+                    l=1
+                
+            except RuntimeError:
+                continue
+        elif l==1:
+            break
+            
+    
+    # redefine gaussian parameters based on result of initial fit
+    params2gauss = fit2g
+    paramsgauss = paramsgauss # should be fine based on initial gauss, with 1g
+    
     for i in range(nimg):
-        print(i)
+        
+        kernind = maxinds[i]
         selwl = dispersion_range[line_low:line_high]
         sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
             min(bkgd_subtract_flaretime[i,line_low:line_high,kernind])
         
         try:
+            
             fit1g, fit1gcov = curve_fit(gaussian,selwl,sel,p0=paramsgauss)
             fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, p0=params2gauss,
                                         maxfev=1500)
@@ -879,10 +906,9 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
 
 def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   gaussian,times,muted,
-                  line_low,line_high,fits_1g,fits_2g,fits_2gneg,
+                  line_low,line_high,fits_1g,fits_2g,fits_2gneg,maxinds,
                   pid='pid_1_84',
-                  date = '08092022',line = 'Ca II H',nimg = 7,
-                  kernind = 1350,nrow=2,ncol=4,lamb0 = 396.85,c=2.99e5,
+                  date = '08092022',line = 'Ca II H',nimg = 7,nrow=2,ncol=4,lamb0 = 396.85,c=2.99e5,
                   note='',lim=0.3e6):
     
     # plotting of the output of "fittingroutines"; can expand to beyond first
@@ -913,7 +939,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
         return (((x/c)+1)*lamb0)-lamb0
     
     for i in range(nimg):
-        
+        kernind = maxinds[i]
         
         sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
             min(bkgd_subtract_flaretime[i,line_low:line_high,kernind])
@@ -1516,7 +1542,7 @@ def comp_fts_to_qs(wlsel, ilamsel, dispersion_range, qs_obs,lowint=0, highint=-1
     
     lns1 = ax.plot(dispersion_range,space_and_time_averaged_qs,color='red',label='DKIST')
     ax0 = ax.twinx()
-    lns2 = ax0.plot(wlsel/10,ilamsel/10,label='Atlas')
+    lns2 = ax0.plot(wlsel,ilamsel,label='Atlas')
     ax.legend()
     ax.grid()
     ax.set_xlabel('Wavelength [nm]',fontsize=13)
@@ -1602,6 +1628,7 @@ def get_calibration_singleval(wave_obs, spec_obs, wave_atlas, spec_atlas,
     Author: Carlos Diaz Baso, Gregal Vissers (ISP/SU 2020), minor modifications
         from Cole Tamburri and Rahul Yadav (CU Boulder/NSO 2023)
     """
+    wave_obs = np.array(wave_obs)
     if wave_idx is None:
         wave_idx = np.arange(wave_obs.size)
     else:
@@ -1629,8 +1656,10 @@ def get_calibration_singleval(wave_obs, spec_obs, wave_atlas, spec_atlas,
     calibration = optim.x
     
     calibrated_qs = spec_obs * calibration[0]
+    
+    new_dispersion_range2 = wave_obs + (calibration[1])
 
-    return calibration, calibrated_qs
+    return calibration, calibrated_qs, new_dispersion_range2
 
 # write calibration function for polynomial-fitting intensity calibration
 def get_calibration_poly():
@@ -1646,7 +1675,7 @@ def plot_calibration(new_dispersion_range, calibrated_qs, wlsel, ilamsel,
     
     lns1 = ax.plot(new_dispersion_range,calibrated_qs,color='red',label='DKIST')
     ax0 = ax.twinx()
-    lns2 = ax0.plot(wlsel/10,ilamsel/10,label='Atlas')
+    lns2 = ax0.plot(wlsel,ilamsel,label='Atlas')
     ax.legend()
     ax.grid()
     ax.set_xlabel('Wavelength [nm]',fontsize=13)
@@ -1659,11 +1688,28 @@ def plot_calibration(new_dispersion_range, calibrated_qs, wlsel, ilamsel,
     ax.legend(lns, labs, loc=0)
     
     plt.show()
+    ax0.set_ylim([min(ilamsel)-.15e6,max(ilamsel)+.15e6])
+    ax.set_ylim([min(ilamsel)-.15e6,max(ilamsel)+.15e6])
     
     fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+\
                 '/pltprofile.png')
     
     return None
+
+def maxintind(new_dispersion_range,image_data_arr_arr,linelow,linehigh,spacelow,spacehigh):
+    # stores spatial indices of max averaged intensity in emission line in
+    # question, to better track flare kernel when working with multiple steps
+    # in the same raster scan (or just to better identify the kernel center
+    # in a single image)
+    
+    indices = []
+    for i in range(np.shape(image_data_arr_arr)[0]):
+        lineavg = list(np.mean(image_data_arr_arr[i,linelow:linehigh,spacelow:spacehigh],axis=0))
+        indices.append(spacelow+lineavg.index(max(lineavg)))
+    
+    return indices
+        
+        
 
 
     
