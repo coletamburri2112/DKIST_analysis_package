@@ -124,14 +124,22 @@ scaled_flare_time, bkgd_subtract_flaretime = \
 # spatial index corresponding to part of observation of interest
 sliceind = 1600
 
+# equivalent widths, effective widths, widths
+caII_8542_low = 535
+caII_8542_high = 565
+
+spacelow = 1200
+spacehigh = 2000
+
+#indices of max intensity - presumably spatial indices of flare kernel
+maxindices = DKISTanalysis.maxintind(new_dispersion_range2,image_data_arr_arr,caII_8542_low,caII_8542_high,spacelow,spacehigh)
+
 # plot intensity calibrated, background-subtracted spectra
 DKISTanalysis.pltsubtract(new_dispersion_range2,nonflare_average,scaled_flare_time,
                           muted,pid='pid_1_38',index=sliceind)
 
 
-# equivalent widths, effective widths, widths
-caII_8542_low = 500
-caII_8542_high = 600
+
 
 
 

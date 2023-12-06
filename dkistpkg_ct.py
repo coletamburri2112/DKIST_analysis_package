@@ -1698,6 +1698,21 @@ def plot_calibration(new_dispersion_range, calibrated_qs, wlsel, ilamsel,
     
     return None
 
+def maxintind(new_dispersion_range,image_data_arr_arr,linelow,linehigh,spacelow,spacehigh):
+    # stores spatial indices of max averaged intensity in emission line in
+    # question, to better track flare kernel when working with multiple steps
+    # in the same raster scan (or just to better identify the kernel center
+    # in a single image)
+    
+    indices = []
+    for i in range(np.shape(image_data_arr_arr)[0]):
+        lineavg = list(np.mean(image_data_arr_arr[i,linelow:linehigh,spacelow:spacehigh],axis=0))
+        indices.append(spacelow+lineavg.index(max(lineavg)))
+    
+    return indices
+        
+        
+
 
     
     
