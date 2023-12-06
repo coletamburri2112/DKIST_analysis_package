@@ -877,6 +877,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     params2gauss = fit2g
     paramsgauss = paramsgauss # should be fine based on initial gauss, with 1g
     
+    print(params2gauss)
     for i in range(nimg):
         
         kernind = maxinds[i]
