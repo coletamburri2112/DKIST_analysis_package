@@ -410,15 +410,15 @@ def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
     return scaled_flare_time, bkgd_subtract_flaretime
     
                             
-def pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,muted,end=5,pid='pid_1_84',index=1350):
+def pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,muted,indexs,end=5,pid='pid_1_84'):
     
     # plotting routines to compare flare-time with non-flare spectra
     fig,ax = plt.subplots(figsize=(10,5))
     ax.plot(dispersion_range[end:]*10,nonflare_average[:-end],\
             color=muted[4],label='Non-Flare')
-    ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,index],\
+    ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]],\
             color=muted[7],label='Flare-Time')
-    ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,index]-\
+    ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]]-\
             nonflare_average[:-end],color=muted[6],label='Flare-Only')
     ax.grid()
     #ax.set_ylim([0,5e6])
@@ -517,8 +517,6 @@ def contwind(sample_flaretime,dispersion_range,maxinds,scaled_flare_time,
         average = np.mean(snapshot,axis=0)
         avgs.append(average)
     
-    maxind = np.argmax(avgs[i][caII_low:caII_high])
-    maxinds.append(maxind)
     contwind0_1 = sample_flaretime[low0:high0]
     contwind0_1_wave = dispersion_range[low0:high0]
     contwind1 = np.mean(sample_flaretime[low1:high1])
@@ -837,9 +835,8 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
 def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                     times_raster1, line_low, line_high,
                     double_gaussian, gaussian, selwl,sel,paramsgauss,
-                    params2gauss,params2gaussneg,pid='pid_1_84',
-                    date = '08/09/2022',line = 'Ca II H',nimg = 7,
-                    kernind = 1350):
+                    params2gauss,params2gaussneg,maxinds,pid='pid_1_84',
+                    date = '08/09/2022',line = 'Ca II H',nimg = 7):
     # More flexible line fitting routines; currently for Ca II H as observed
     # in pid_1_84, but flexible for application to other lines.  Currently also
     # only includes functinoality for single Gaussian and double Gaussian fits;
@@ -856,6 +853,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     j=0
     # first iteration. Use this as guide for the fit parameters to follow
     for j in range(nimg):
+        kernind = maxinds[j]
         if l == 0:
             selwl = dispersion_range[line_low:line_high]
             sel = bkgd_subtract_flaretime[j,line_low:line_high,kernind]-\
@@ -880,7 +878,8 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     paramsgauss = paramsgauss # should be fine based on initial gauss, with 1g
     
     for i in range(nimg):
-        print(i)
+        
+        kernind = maxinds[i]
         selwl = dispersion_range[line_low:line_high]
         sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
             min(bkgd_subtract_flaretime[i,line_low:line_high,kernind])
@@ -907,10 +906,9 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
 
 def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   gaussian,times,muted,
-                  line_low,line_high,fits_1g,fits_2g,fits_2gneg,
+                  line_low,line_high,fits_1g,fits_2g,fits_2gneg,maxinds,
                   pid='pid_1_84',
-                  date = '08092022',line = 'Ca II H',nimg = 7,
-                  kernind = 1350,nrow=2,ncol=4,lamb0 = 396.85,c=2.99e5,
+                  date = '08092022',line = 'Ca II H',nimg = 7,nrow=2,ncol=4,lamb0 = 396.85,c=2.99e5,
                   note='',lim=0.3e6):
     
     # plotting of the output of "fittingroutines"; can expand to beyond first
@@ -941,7 +939,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
         return (((x/c)+1)*lamb0)-lamb0
     
     for i in range(nimg):
-        
+        kernind = maxinds[i]
         
         sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
             min(bkgd_subtract_flaretime[i,line_low:line_high,kernind])

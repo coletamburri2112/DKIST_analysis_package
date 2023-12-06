@@ -121,22 +121,23 @@ scaled_flare_time, bkgd_subtract_flaretime = \
     DKISTanalysis.scaling(image_data_arr_arr, nonflare_multfact, clv_corr,
                           nonflare_average)
 
-# spatial index corresponding to part of observation of interest
-sliceind = 1600
 
 # equivalent widths, effective widths, widths
-caII_8542_low = 535
-caII_8542_high = 565
+caII_8542_low_foravg = 535
+caII_8542_high_foravg = 565
+
+caII_8542_low = 500
+caII_8542_high = 600
 
 spacelow = 1200
 spacehigh = 2000
 
 #indices of max intensity - presumably spatial indices of flare kernel
-maxindices = DKISTanalysis.maxintind(new_dispersion_range2,image_data_arr_arr,caII_8542_low,caII_8542_high,spacelow,spacehigh)
+maxindices = DKISTanalysis.maxintind(new_dispersion_range2,image_data_arr_arr,caII_8542_low_foravg,caII_8542_high_foravg,spacelow,spacehigh)
 
 # plot intensity calibrated, background-subtracted spectra
 DKISTanalysis.pltsubtract(new_dispersion_range2,nonflare_average,scaled_flare_time,
-                          muted,pid='pid_1_38',index=sliceind)
+                          muted,maxindices,pid='pid_1_38')
 
 
 
@@ -144,22 +145,20 @@ DKISTanalysis.pltsubtract(new_dispersion_range2,nonflare_average,scaled_flare_ti
 
 
 # put bkgd_subtract_flaretime here, when ready
-sample_flaretime = bkgd_subtract_flaretime[0,:,sliceind]
+sample_flaretime = bkgd_subtract_flaretime[0,:,maxindices[0]]
 
 # perform following line only if need to calculate continuum window 
 # independently of width determiation; 
 # exists within width determination script as well
 
 #nolines, cont_int_array, cont_int_wave_array = \
-    # DKISTanalysis.contwind(sample_flaretime,dispersion_range,maxinds,avgs,
+    # DKISTanalysis.contwind(sample_flaretime,dispersion_range,maxindices,avgs,
                            # low,high)
 
 # line widths, strengths initial arrays
 ew_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
 eqw_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
 width_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
-
-maxinds = []
 
 # line widths, strength determination
 ew_CaII_all_fs, eqw_CaII_all_fs,\
@@ -181,8 +180,8 @@ storemu2 = []
 storesig2 = []
 
 
-sel = bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,sliceind]-\
-    min(bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,sliceind])
+sel = bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,maxindices[0]]-\
+    min(bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,maxindices[0]])
 selwl = dispersion_range[caII_8542_low:caII_8542_high]
         
 # width determination
@@ -204,15 +203,15 @@ fits_1g,fits_2g,fits_2gneg = \
                                   selwl,sel,[1.1,854.28,0.05],
                                   [.3e6,854.2,0.007,.6e6,854.22,0.02],
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
-                                  pid='pid_1_38', date = '04/20/2022',
-                                  line = 'Ca II 854.2',nimg = 50, kernind = sliceind)
+                                  maxindices,pid='pid_1_38', date = '04/20/2022',
+                                  line = 'Ca II 854.2',nimg = 50)
 # plot results of Gaussian fitting
 DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,new_dispersion_range2,
                             DKISTanalysis.double_gaussian,
                             DKISTanalysis.gaussian,times,muted,caII_8542_low,caII_8542_high,fits_1g,fits_2g,fits_2gneg,
-                            pid='pid_1_38', date = '04202022',line = 'Ca 854.2',
+                            maxindices,pid='pid_1_38', date = '04202022',line = 'Ca 854.2',
                             nimg = 50, nrow=4,ncol=5,
-                            note=', post_subtract',lim=0.1,lamb0=854.209,kernind=1600)
+                            note=', post_subtract',lim=0.1,lamb0=854.209)
     
 
 
