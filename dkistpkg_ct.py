@@ -547,7 +547,7 @@ def widths_strengths(ew_CaII_all_fs,eqw_CaII_all_fs,width_CaII_all_fs,
                      ew_hep_all_fs,eqw_hep_all_fs,width_hep_all_fs,
                      caII_low,caII_high,hep_low,hep_high,
                      scaled_flare_time,bkgd_subtract_flaretime,
-                     dispersion_range,deg=6,low0=29,high0=29,low1=60,high1=150,
+                     dispersion_range,deg=6,low0=29,high0=30,low1=60,high1=150,
                      low2=265,high2=290,low3=360,high3=400,low4=450,high4=480,
                      low5=845,high5=870,low6=945,high6=965):
     
@@ -568,11 +568,13 @@ def widths_strengths(ew_CaII_all_fs,eqw_CaII_all_fs,width_CaII_all_fs,
     # with for justification)
     for j in range(np.shape(bkgd_subtract_flaretime)[2]):
         for i in range(len(scaled_flare_time)-5):
+            print(i)
+            print(j)
             sample_flaretime = bkgd_subtract_flaretime[i,:,j]
             foreqw = scaled_flare_time[i,:,j]
-            contwind0_1 = np.mean(sample_flaretime[low0:high0])
-            contwind0_1eq = np.mean(foreqw[low0:high0])
-            contwind0_1_wave = np.mean(dispersion_range[low0:high0])
+            contwind0_1 = np.nanmean(sample_flaretime[low0:high0])
+            contwind0_1eq = np.nanmean(foreqw[low0:high0])
+            contwind0_1_wave = np.nanmean(dispersion_range[low0:high0])
             contwind1eq = np.mean(foreqw[low1:high1])
             contwind1 = np.mean(sample_flaretime[low1:high1])
             contwind1_wave = np.mean(dispersion_range[low1:high1])
@@ -860,7 +862,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                 min(bkgd_subtract_flaretime[j,line_low:line_high,kernind]) 
             try:
                 fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, p0=params2gauss,
-                                            maxfev=1500)
+                                            maxfev=5000)
                 
                 if fit2g[0]/fit2g[3] > 1 or np.abs(fit2g[4]-fit2g[1])>0.04:
                     continue
@@ -889,7 +891,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
             
             fit1g, fit1gcov = curve_fit(gaussian,selwl,sel,p0=paramsgauss)
             fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, p0=params2gauss,
-                                        maxfev=1500)
+                                        maxfev=5000)
             #fit2gneg, fit2gnegcov = curve_fit(double_gaussian,selwl,\ 
                 #sel,p0=params2gaussneg,maxfev=5000)
                 
@@ -1710,6 +1712,10 @@ def maxintind(new_dispersion_range,image_data_arr_arr,linelow,linehigh,spacelow,
     
     return indices
         
+def comp_fit_results_gauss2(fits_2g,times):
+    
+    fig,ax = plt.subplots()
+    
         
 
 

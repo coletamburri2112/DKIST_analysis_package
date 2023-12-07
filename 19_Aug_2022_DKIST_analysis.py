@@ -47,14 +47,15 @@ dir_list2 = DKISTanalysis.pathdef(path,folder1)
 lon = 58.57 #degrees
 lat = -29.14 #degrees
 
-wl = 396.8 # central wavelength, Ca II H
+wl = 396.847 # central wavelength, Ca II H
 
 # spatial coordinates
-hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu = \
+hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu, doppshrel,\
+    doppshnonrel = \
     DKISTanalysis.spatialinit(path,folder1,dir_list2,lon,lat,wl)
 
 # get limb darkening coefficient 
-clv_corr = DKISTanalysis.limbdarkening(396.8, mu=0.557, nm=True)
+clv_corr = DKISTanalysis.limbdarkening(wl, mu=mu, nm=True)
     # for Ca II H (require mu value for determination, be sure to specify
     # correct wl units)
     
@@ -63,7 +64,7 @@ image_data_arr_arr,i_file_raster1, for_scale, times_raster1 = \
     DKISTanalysis.fourstepprocess(path,folder1,dir_list2)
     
 # spatial and dispersion axes for single observation (single slit step)
-spatial_range, dispersion_range = DKISTanalysis.spatialaxis(i_file_raster1)
+spatial_range, dispersion_range = DKISTanalysis.spatialaxis(path,folder1,dir_list2,line='Ca II H')
 
 #only for 19 August observations, really - the QS will be different for others
 nonflare_average = np.load('/Users/coletamburri/Desktop/'+\
@@ -74,15 +75,27 @@ nonflare_fitvals = np.load('/Users/coletamburri/Desktop/'+\
                            'bolow_nonflare_fit_vals.npy')
 nonflare_multfact = np.load('/Users/coletamburri/Desktop/'+\
                             'bolow_nonflare_mult_fact.npy')
-
+    
+nonflare_average_avg = np.mean(nonflare_average,axis=1)
 # intensity calibration, background subtraction                            
 scaled_flare_time, bkgd_subtract_flaretime = \
     DKISTanalysis.scaling(for_scale, nonflare_multfact,clv_corr,
-                          nonflare_average)
+                          nonflare_average_avg)
+
+caII_low_foravg = 525
+caII_high_foravg = 600
+
+spacelow = 1000
+spacehigh = -1
+
+#indices of max intensity in each frame
+maxindices = DKISTanalysis.maxintind(dispersion_range,bkgd_subtract_flaretime,
+                                     caII_low_foravg,caII_high_foravg,
+                                     spacelow,spacehigh)
 
 # plot intensity calibrated, background-subtracted spectra
-DKISTanalysis.pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,
-                          muted)
+DKISTanalysis.pltsubtract(dispersion_range,nonflare_average_avg,scaled_flare_time,
+                          muted,maxindices)
 
 # variation in intensity value corresponding to wavelengths; PTE; to test
 # for variations in pseudo-continuum.  If PTE high, cannot be explained by the
@@ -101,7 +114,7 @@ caII_high = 660
 hep_low = 700
 hep_high = 850
 
-sample_flaretime = bkgd_subtract_flaretime[0,:,1350]
+sample_flaretime = bkgd_subtract_flaretime[0,:,maxindices[0]]
 
 # perform following line only if need to calculate continuum window 
 # independently of width determiation; 
@@ -119,7 +132,6 @@ eqw_hep_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flare
 width_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
 width_hep_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
 
-maxinds = []
 
 # line widths, strength determination
 ew_CaII_all_fs, ew_hep_all_fs, eqw_CaII_all_fs,\
@@ -142,7 +154,7 @@ storemu2 = []
 storesig2 = []
 
 # spatial index corresponding to part of observation of interest
-sliceind = 1350
+sliceind = maxindices[0]
 sel = bkgd_subtract_flaretime[0,caII_low:caII_high,sliceind]-\
     min(bkgd_subtract_flaretime[0,caII_low:caII_high,sliceind])
 selwl = dispersion_range[caII_low:caII_high]
@@ -175,17 +187,18 @@ fits_1g,fits_2g,fits_2gneg = \
                                   selwl,sel,[4e6,396.85,0.02],
                                   [2e6,396.84,0.015,2e6,396.86,0.015],
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
-                                  pid='pid_1_84', date = '08/09/2022',
-                                  line = 'Ca II H',nimg = 7, kernind = sliceind)
+                                  maxindices,pid='pid_1_84', date = '08/09/2022',
+                                  line = 'Ca II H',nimg = 7)
 
 # plot results of Gaussian fitting
+
+note = ', testing more maxfeval'
 DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range,
                             DKISTanalysis.double_gaussian,
                             DKISTanalysis.gaussian,times_raster1,muted,
-                            caII_low,caII_high,fits_1g,fits_2g,fits_2gneg,
+                            caII_low,caII_high,fits_1g,fits_2g,fits_2gneg,maxindices,
                             pid='pid_1_84', date = '08092022',line = 'Ca II H',
-                            nimg = 7, kernind = sliceind,nrol=2,ncol=4,
-                            note=', 2e6 first, 2e6 second component, start closer to cent')
+                            nimg = 7, nrow=2,ncol=4,lamb0=wl,note=note)
     
 
 

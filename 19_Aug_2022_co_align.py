@@ -40,6 +40,7 @@ folder1 = 'AZVXV'
 path_vbi = '/Volumes/VBI_Aug_15_Aug_25_22/pid_1_84/'
 folder1_vbi = 'BXWNO'
 folder2_vbi = 'BYMOL'
+
 dir_list2 = DKISTanalysis.pathdef(path,folder1)
 
 # Stonyhurst lon/lat from JHv
@@ -49,18 +50,20 @@ lat = -29.14 #degrees
 #central wl
 wl = 396.8 # Ca II H
 
-limbdarkening = 0.57 # for Ca II H
-
 #spatial coordinates
-hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu = \
-    DKISTanalysis.spatialinit(path,folder1,dir_list2,lon,lat,wl,limbdarkening)
+hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu, \
+    doppshnonrel, doppshrel = \
+    DKISTanalysis.spatialinit(path,folder1,dir_list2,lon,lat,wl)
+
+limbdarkening = DKISTanalysis.limbdarkening(wl,mu=mu) # for Ca II H
+
 
 #processing of raster
 image_data_arr_arr,i_file_raster1, for_scale, times_raster1 = \
     DKISTanalysis.fourstepprocess(path,folder1,dir_list2)
 
 #initial scan from ViSP w/ spatial coordinates
-spatial_range, dispersion_range = DKISTanalysis.spatialaxis(i_file_raster1)
+spatial_range, dispersion_range = DKISTanalysis.spatialaxis(path,folder1,dir_list2,line='Ca II H')
 
 spatial_range2, raster_range = DKISTanalysis.vispranges(i_file_raster1,
                                                         spatial_range)
