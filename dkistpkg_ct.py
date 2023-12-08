@@ -322,7 +322,7 @@ def multistepprocess(path,folder1,dir_list2,div=10,startstep=0):
     times = []
     
     # extract relevant information
-    for i in range(0,round(len(dir_list2)/div),1):
+    for i in range(0,round(len(dir_list2)/div)-startstep,1):
         i_file = fits.open(path+folder1+'/'+dir_list2[i+startstep])
         times.append(i_file[1].header['DATE-BEG'])
         i_data = i_file[1].data[0]
@@ -413,6 +413,7 @@ def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
 def pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,muted,indexs,end=5,pid='pid_1_84'):
     
     # plotting routines to compare flare-time with non-flare spectra
+    
     fig,ax = plt.subplots(figsize=(10,5))
     ax.plot(dispersion_range[end:]*10,nonflare_average[:-end],\
             color=muted[4],label='Non-Flare')
@@ -441,7 +442,8 @@ def deviations(bkgd_subtract_flaretime,nonflare_average,nonflare_stdevs,end=5):
     # variation in the nonflare average in order to test if this variation is
     # due to flaring activity or something else in the spectra
     
-    stdevs_flaretime = np.zeros([np.shape(nonflare_average)[0]-5,np.shape(nonflare_average)[1]])
+    stdevs_flaretime = np.zeros([np.shape(nonflare_average)[0]-5,
+                                 np.shape(nonflare_average)[1]])
 
     for i in range(np.shape(bkgd_subtract_flaretime)[1]-5):
         for j in range(np.shape(bkgd_subtract_flaretime)[2]):
@@ -449,7 +451,7 @@ def deviations(bkgd_subtract_flaretime,nonflare_average,nonflare_stdevs,end=5):
             
     # Compute PTE in dispersion dimension for all spatial locations
     ptes_flaretime = np.zeros([np.shape(nonflare_average)[0]-5,\
-                               np.shape(nonflare_average)[1]]) # just one spatial location
+                               np.shape(nonflare_average)[1]]) # just one loc
     totnum = np.shape(ptes_flaretime)[1] # total number of spatial points
     for i in range(np.shape(nonflare_stdevs)[0]-5):
         for j in range(np.shape(nonflare_stdevs)[1]):
@@ -861,7 +863,8 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
             sel = bkgd_subtract_flaretime[j,line_low:line_high,kernind]-\
                 min(bkgd_subtract_flaretime[j,line_low:line_high,kernind]) 
             try:
-                fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, p0=params2gauss,
+                fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, 
+                                            p0=params2gauss,
                                             maxfev=5000)
                 
                 if fit2g[0]/fit2g[3] > 1 or np.abs(fit2g[4]-fit2g[1])>0.04:
@@ -890,7 +893,8 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
         try:
             
             fit1g, fit1gcov = curve_fit(gaussian,selwl,sel,p0=paramsgauss)
-            fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, p0=params2gauss,
+            fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, 
+                                        p0=params2gauss,
                                         maxfev=5000)
             #fit2gneg, fit2gnegcov = curve_fit(double_gaussian,selwl,\ 
                 #sel,p0=params2gaussneg,maxfev=5000)
@@ -911,7 +915,8 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   gaussian,times,muted,
                   line_low,line_high,fits_1g,fits_2g,fits_2gneg,maxinds,
                   pid='pid_1_84',
-                  date = '08092022',line = 'Ca II H',nimg = 7,nrow=2,ncol=4,lamb0 = 396.85,c=2.99e5,
+                  date = '08092022',line = 'Ca II H',nimg = 7,nrow=2,ncol=4,
+                  lamb0 = 396.85,c=2.99e5,
                   note='',lim=0.3e6):
     
     # plotting of the output of "fittingroutines"; can expand to beyond first
@@ -959,7 +964,8 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
         #fit2gneg = fits_2gneg[i][0]
         
         if i > 0 and i % (nrow*ncol) == 0:
-            secaxx = ax.flatten()[0].secondary_xaxis('top', functions=(veltrans,wltrans))
+            secaxx = ax.flatten()[0].secondary_xaxis('top', functions=(veltrans,
+                                                                       wltrans))
             secaxx.set_xlabel(r'Velocity $[km\; s^{-1}]$')
             ax.flatten()[0].set_xlabel(r' $\lambda$ - $\lambda_0$ [nm]')
             ax.flatten()[0].set_ylabel(r'Intensity (- $I_{min}$) $[W\; cm^{-2} sr^{-1} \AA^{-1}]$')
@@ -989,14 +995,18 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
 
             ax.flatten()[l].plot(selwlshift,sel,label='data')
             #ax.flatten()[i].plot(selwlshift,gaussfity,label='G1')
-            ax.flatten()[l].plot(selwlshift,gauss2fity,label='G2',color=muted[2])
-            ax.flatten()[l].plot(selwlshift,comp1fity,label='G2,C1',color=muted[4])
-            ax.flatten()[l].plot(selwlshift,comp2fity,label='G2,C2',color=muted[6])
+            ax.flatten()[l].plot(selwlshift,gauss2fity,label='G2',
+                                 color=muted[2])
+            ax.flatten()[l].plot(selwlshift,comp1fity,label='G2,C1',
+                                 color=muted[4])
+            ax.flatten()[l].plot(selwlshift,comp2fity,label='G2,C2',
+                                 color=muted[6])
             #ax.flatten()[i].plot(selwl,gauss2negfity,label='Gauss2neg')
             #ax.flatten()[i].legend()
             ax.flatten()[l].axis(ymin=0,ymax=maxprofile+lim)
             ax.flatten()[l].axvline(0,linestyle='dotted')
-            secaxx = ax.flatten()[l].secondary_xaxis('top', functions=(veltrans,wltrans))
+            secaxx = ax.flatten()[l].secondary_xaxis('top', 
+                                                     functions=(veltrans,wltrans))
             ax.flatten()[l].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))  
             ax.flatten()[l].set_title(times[i])
             
@@ -1025,7 +1035,8 @@ def perclevels(bkgd_subtract_flaretime,dispersion_range,caII_low,caII_high,
     # atmospheric heights) - see Graham and Cauzzi, 2015, 2020
     
     for i in range(np.shape(bkgd_subtract_flaretime)[0]):
-        sel = bkgd_subtract_flaretime[i,caII_low:caII_high,1350]-min(bkgd_subtract_flaretime[i,caII_low:caII_high,1350])
+        sel = bkgd_subtract_flaretime[i,caII_low:caII_high,1350]-\
+            min(bkgd_subtract_flaretime[i,caII_low:caII_high,1350])
         selwl = dispersion_range[caII_low:caII_high]
         
         maxsel = np.max(sel)
@@ -1037,16 +1048,25 @@ def perclevels(bkgd_subtract_flaretime,dispersion_range,caII_low,caII_high,
         
         lensel=len(sel)
         
-        ten_lev_low, ten_ind_low = find_nearest(sel[0:round(lensel/2)],ten_perc_level)
-        ten_lev_high, ten_ind_high = find_nearest(sel[round(lensel/2):],ten_perc_level)
-        quarter_lev_low, quarter_ind_low = find_nearest(sel[0:round(lensel/2)],quarter_perc_level)
-        quarter_lev_high, quarter_ind_high = find_nearest(sel[round(lensel/2):],quarter_perc_level)
-        half_lev_low, half_ind_low = find_nearest(sel[0:round(lensel/2)],half_level)
-        half_lev_high, half_ind_high = find_nearest(sel[round(lensel/2):],half_level)
+        ten_lev_low, ten_ind_low = find_nearest(sel[0:round(lensel/2)],
+                                                ten_perc_level)
+        ten_lev_high, ten_ind_high = find_nearest(sel[round(lensel/2):],
+                                                  ten_perc_level)
+        quarter_lev_low, quarter_ind_low = find_nearest(sel[0:round(lensel/2)],
+                                                        quarter_perc_level)
+        quarter_lev_high, quarter_ind_high = find_nearest(sel[round(lensel/2):],
+                                                          quarter_perc_level)
+        half_lev_low, half_ind_low = find_nearest(sel[0:round(lensel/2)],
+                                                  half_level)
+        half_lev_high, half_ind_high = find_nearest(sel[round(lensel/2):],
+                                                    half_level)
         
-        ten_perc_width = dispersion_range[round(lensel/2)+ten_ind_high]-dispersion_range[ten_ind_low]
-        quarter_perc_width = dispersion_range[round(lensel/2)+quarter_ind_high]-dispersion_range[quarter_ind_low]
-        half_perc_width = dispersion_range[round(lensel/2)+half_ind_high]-dispersion_range[half_ind_low]
+        ten_perc_width = dispersion_range[round(lensel/2)+ten_ind_high]-\
+            dispersion_range[ten_ind_low]
+        quarter_perc_width = dispersion_range[round(lensel/2)+quarter_ind_high]\
+            -dispersion_range[quarter_ind_low]
+        half_perc_width = dispersion_range[round(lensel/2)+half_ind_high]\
+            -dispersion_range[half_ind_low]
         
         store_ten_width.append(ten_perc_width)
         store_quarter_width.append(quarter_perc_width)
@@ -1070,8 +1090,10 @@ def space_range(hdul1):
     
     #x_range is helioprojective latitude position along slit
     #y_range is helioprojective longitude position of raster step
-    x_range = np.linspace(x_cent-x_delt*(nspace-1)/2,x_cent+x_delt*(nspace-1)/2,nspace)
-    y_range = np.linspace(y_cent-y_delt*(nspace-1)/2,y_cent+y_delt*(nspace-1)/2,nspace)
+    x_range = np.linspace(x_cent-x_delt*(nspace-1)/2,x_cent+x_delt*(nspace-1)/2,
+                          nspace)
+    y_range = np.linspace(y_cent-y_delt*(nspace-1)/2,y_cent+y_delt*(nspace-1)/2,
+                          nspace)
     
     arcsec_slit = np.linspace(0,nspace*x_delt,nspace)
     return x_cent, y_cent, x_delt, y_delt, x_range, y_range, arcsec_slit, nspace
@@ -1085,8 +1107,10 @@ def vispranges(hdul1,spatial_range,nslitpos=4):
     slitlen = hdul1[1].header['CDELT2']*len(spatial_range) #in arcsec
     rastersize = hdul1[1].header['CDELT3']*nslitpos
     
-    raster_range = [0,hdul1[1].header['CDELT3'],hdul1[1].header['CDELT3']*2,hdul1[1].header['CDELT3']*3,hdul1[1].header['CDELT3']*4]
-    spatial_range2 = np.insert(spatial_range,0,spatial_range[0]-(spatial_range[1]-spatial_range[0]))
+    raster_range = [0,hdul1[1].header['CDELT3'],hdul1[1].header['CDELT3']*2,
+                    hdul1[1].header['CDELT3']*3,hdul1[1].header['CDELT3']*4]
+    spatial_range2 = np.insert(spatial_range,0,spatial_range[0]-
+                               (spatial_range[1]-spatial_range[0]))
     
     return spatial_range2, raster_range
 
@@ -1143,7 +1167,8 @@ def pltraster(caiiavgs,raster_range,spatial_range2,pid='pid_1_84'):
     ax.set_aspect('equal')
     
     plt.show()
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+'/initslit.png')
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+
+                '/initslit.png')
     
     return None
 
@@ -1176,8 +1201,10 @@ def vbi_process(path_vbi,folder1_vbi):
     ynum = hdul1_vbi[1].header['NAXIS2']
     ydelt = hdul1_vbi[1].header['CDELT2']
     
-    xarr = np.linspace(((xcent-xdelt/2)-((xnum-1)/2)*xdelt),((xcent-xdelt/2)+((xnum-1)/2)*xdelt),xnum)
-    yarr = np.linspace(((ycent-ydelt/2)-((ynum-1)/2)*ydelt),((ycent-ydelt/2)+((ynum-1)/2)*ydelt),ynum)
+    xarr = np.linspace(((xcent-xdelt/2)-((xnum-1)/2)*xdelt),
+                       ((xcent-xdelt/2)+((xnum-1)/2)*xdelt),xnum)
+    yarr = np.linspace(((ycent-ydelt/2)-((ynum-1)/2)*ydelt),
+                       ((ycent-ydelt/2)+((ynum-1)/2)*ydelt),ynum)
     
     vbi_X,vbi_Y = np.meshgrid(np.flip(xarr),yarr)
     
@@ -1225,7 +1252,8 @@ def plt_precoalign(vbi_X, vbi_Y, hdul1_vbi, visp_X, visp_Y, vispimg,matplotlib,
     matplotlib.use('Qt5Agg')
     aa = plt.ginput(6,timeout = 120)
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+'pre_coalign.png')
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+
+                'pre_coalign.png')
     
     return aa
 
@@ -1303,15 +1331,20 @@ def vbi_visp_transformation(aa, visp_X,visp_Y,nslit,nwave,vbi_X,vbi_Y,dat0_vbi,
     
     plt.show()
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+'postcalib.png')
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+
+                'postcalib.png')
     
     # plot overlay
     
-    verts=np.array([[visp_X_new[-1,-1],visp_Y_new[-1,-1]],[visp_X_new[-1,0],visp_Y_new[-1,0]],[visp_X_new[0,0],visp_Y_new[0,0]],[visp_X_new[0,-1],visp_Y_new[0,-1]]])
+    verts=np.array([[visp_X_new[-1,-1],visp_Y_new[-1,-1]],
+                    [visp_X_new[-1,0],visp_Y_new[-1,0]],
+                    [visp_X_new[0,0],visp_Y_new[0,0]],
+                    [visp_X_new[0,-1],visp_Y_new[0,-1]]])
     
     fig,ax = plt.subplots(1,1,figsize = (5,5))
     ax.pcolormesh(vbi_X,vbi_Y,dat0_vbi,cmap='gray')
-    ax.pcolormesh(visp_X_new,visp_Y_new,np.transpose(vispimg),cmap='hot',alpha = 0.3)
+    ax.pcolormesh(visp_X_new,visp_Y_new,np.transpose(vispimg),cmap='hot',
+                  alpha = 0.3)
     boxy = matplotlib.patches.Polygon(verts,fill=False,edgecolor='black',lw=3)
     ax.add_patch(boxy)
     ax.set_title('VBI '+vbiband+' and ViSP '+vispband,fontsize=15)
@@ -1320,7 +1353,8 @@ def vbi_visp_transformation(aa, visp_X,visp_Y,nslit,nwave,vbi_X,vbi_Y,dat0_vbi,
     
     plt.show()
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+'postcalib_overlay.png')
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+
+                'postcalib_overlay.png')
     
     
     return visp_X_new, visp_Y_new
@@ -1564,10 +1598,21 @@ def comp_fts_to_qs(wlsel, ilamsel, dispersion_range, qs_obs,lowint=0, highint=-1
 def calib_qs_shift(wlsel, ilamsel, dispersion_range, space_and_time_averaged_qs,
              absline1, absline2, indmins, indmaxs):
     
+    """
+    Calibration of shift in spectrum using quiet sun and comparison to solar 
+    atlas.  Performed after loading reference spectrum and quiet Sun, using 
+    two absorption lines (with indices in observation spectrum, and reference
+    wavelengths from atlas) in order to determine plate scale.
+    """
+    
 
     dispersion_range = np.array(dispersion_range)
-    shiftsel_obs1 = np.where((dispersion_range>dispersion_range[indmins[0]]) & (dispersion_range<dispersion_range[indmaxs[0]]))
-    shiftsel_obs2 = np.where((dispersion_range>dispersion_range[indmins[1]]) & (dispersion_range<dispersion_range[indmaxs[1]]))
+    
+    # define locations of reference lines
+    shiftsel_obs1 = np.where((dispersion_range>dispersion_range[indmins[0]]) & 
+                             (dispersion_range<dispersion_range[indmaxs[0]]))
+    shiftsel_obs2 = np.where((dispersion_range>dispersion_range[indmins[1]]) & 
+                             (dispersion_range<dispersion_range[indmaxs[1]]))
     
     wavesel_obs1 = np.take(dispersion_range,shiftsel_obs1)[0]
     fluxsel_obs1 = np.take(space_and_time_averaged_qs,shiftsel_obs1)[0]
@@ -1581,11 +1626,13 @@ def calib_qs_shift(wlsel, ilamsel, dispersion_range, space_and_time_averaged_qs,
     xfit1, yfit1, w0_1 = fitline(pixsel_obs1,fluxsel_obs1)
     xfit2, yfit2, w0_2 = fitline(pixsel_obs2,fluxsel_obs2)
     
+    # shift in lines
     dw1 = w0_1-absline1
     dw2 = w0_2-absline2
     
     dt = absline2 - absline1
 
+    # correction in wavelengths of reference lines
     corr1 = w0_1 + indmins[0]
     corr2 = w0_2 + indmins[1]
     
@@ -1594,9 +1641,9 @@ def calib_qs_shift(wlsel, ilamsel, dispersion_range, space_and_time_averaged_qs,
     #change per nm
     rat = dt/obsdiff
     
-    print('nm per pix:',rat)
-    
-    new_dispersion_range = (np.arange(0,len(dispersion_range))-corr1)*rat + absline1
+    # definition of new dispersion range
+    new_dispersion_range = (np.arange(0,len(dispersion_range))-corr1)*rat + \
+        absline1
     
     return new_dispersion_range, rat
 
@@ -1672,7 +1719,12 @@ def get_calibration_poly():
     return calibration, calibrated_qs
 
 def plot_calibration(new_dispersion_range, calibrated_qs, wlsel, ilamsel,
-                     pid='pid_1_84'):
+                     pid='pid_1_84',wl=854.207):
+    
+    """
+    Plotting routine for calibration - quiet sun compared to reference atlas 
+    spectrum, with calibrated units
+    """
     
     fig,ax = plt.subplots()
     
@@ -1686,6 +1738,7 @@ def plot_calibration(new_dispersion_range, calibrated_qs, wlsel, ilamsel,
     ax0.set_ylabel(r'Disk Center Intensity [$W/cm^2/sr/\mathring A$]',fontsize=13)
     ax.set_title('Calibrated Quiet Sun Intensity',fontsize=20)
     lns = lns1+lns2
+    ax.axvline(wl)
     
     labs = [l.get_label() for l in lns]
     ax.legend(lns, labs, loc=0)
@@ -1700,10 +1753,12 @@ def plot_calibration(new_dispersion_range, calibrated_qs, wlsel, ilamsel,
     return None
 
 def maxintind(new_dispersion_range,image_data_arr_arr,linelow,linehigh,spacelow,spacehigh):
-    # stores spatial indices of max averaged intensity in emission line in
-    # question, to better track flare kernel when working with multiple steps
-    # in the same raster scan (or just to better identify the kernel center
-    # in a single image)
+    """
+    Stores spatial indices of max averaged intensity in emission line in
+    question, to better track flare kernel when working with multiple steps
+    in the same raster scan (or just to better identify the kernel center
+    in a single image)
+    """
     
     indices = []
     for i in range(np.shape(image_data_arr_arr)[0]):
@@ -1713,6 +1768,21 @@ def maxintind(new_dispersion_range,image_data_arr_arr,linelow,linehigh,spacelow,
     return indices
         
 def comp_fit_results_gauss2(fits_2g,times):
+    """
+    
+
+    Parameters
+    ----------
+    fits_2g : TYPE
+        DESCRIPTION.
+    times : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     
     fig,ax = plt.subplots()
     

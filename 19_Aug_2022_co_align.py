@@ -55,8 +55,8 @@ hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu, \
     doppshnonrel, doppshrel = \
     DKISTanalysis.spatialinit(path,folder1,dir_list2,lon,lat,wl)
 
+# calculate limb darkening
 limbdarkening = DKISTanalysis.limbdarkening(wl,mu=mu) # for Ca II H
-
 
 #processing of raster
 image_data_arr_arr,i_file_raster1, for_scale, times_raster1 = \
