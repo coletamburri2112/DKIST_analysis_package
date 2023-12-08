@@ -64,7 +64,8 @@ image_data_arr_arr,i_file_raster1, for_scale, times_raster1 = \
     DKISTanalysis.fourstepprocess(path,folder1,dir_list2)
     
 # spatial and dispersion axes for single observation (single slit step)
-spatial_range, dispersion_range = DKISTanalysis.spatialaxis(path,folder1,dir_list2,line='Ca II H')
+spatial_range, dispersion_range = DKISTanalysis.spatialaxis(path,folder1,
+                                                            dir_list2,line='Ca II H')
 
 #only for 19 August observations, really - the QS will be different for others
 nonflare_average = np.load('/Users/coletamburri/Desktop/'+\
@@ -76,7 +77,9 @@ nonflare_fitvals = np.load('/Users/coletamburri/Desktop/'+\
 nonflare_multfact = np.load('/Users/coletamburri/Desktop/'+\
                             'bolow_nonflare_mult_fact.npy')
     
+# simplify the quiet sun for comparison to flaretime
 nonflare_average_avg = np.mean(nonflare_average,axis=1)
+
 # intensity calibration, background subtraction                            
 scaled_flare_time, bkgd_subtract_flaretime = \
     DKISTanalysis.scaling(for_scale, nonflare_multfact,clv_corr,
@@ -94,8 +97,8 @@ maxindices = DKISTanalysis.maxintind(dispersion_range,bkgd_subtract_flaretime,
                                      spacelow,spacehigh)
 
 # plot intensity calibrated, background-subtracted spectra
-DKISTanalysis.pltsubtract(dispersion_range,nonflare_average_avg,scaled_flare_time,
-                          muted,maxindices)
+DKISTanalysis.pltsubtract(dispersion_range,nonflare_average_avg,
+                          scaled_flare_time,muted,maxindices)
 
 # variation in intensity value corresponding to wavelengths; PTE; to test
 # for variations in pseudo-continuum.  If PTE high, cannot be explained by the
@@ -125,12 +128,18 @@ sample_flaretime = bkgd_subtract_flaretime[0,:,maxindices[0]]
                            # low,high)
 
 # line widths, strengths initial arrays
-ew_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
-ew_hep_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
-eqw_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
-eqw_hep_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
-width_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
-width_hep_all_fs = np.zeros((len(scaled_flare_time)-5,np.shape(bkgd_subtract_flaretime)[2]))
+ew_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
+                           np.shape(bkgd_subtract_flaretime)[2]))
+ew_hep_all_fs = np.zeros((len(scaled_flare_time)-5,
+                          np.shape(bkgd_subtract_flaretime)[2]))
+eqw_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
+                            np.shape(bkgd_subtract_flaretime)[2]))
+eqw_hep_all_fs = np.zeros((len(scaled_flare_time)-5,
+                           np.shape(bkgd_subtract_flaretime)[2]))
+width_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
+                              np.shape(bkgd_subtract_flaretime)[2]))
+width_hep_all_fs = np.zeros((len(scaled_flare_time)-5,
+                             np.shape(bkgd_subtract_flaretime)[2]))
 
 
 # line widths, strength determination
