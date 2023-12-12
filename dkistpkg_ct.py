@@ -1712,11 +1712,52 @@ def get_calibration_singleval(wave_obs, spec_obs, wave_atlas, spec_atlas,
     return calibration, calibrated_qs, new_dispersion_range2
 
 # write calibration function for polynomial-fitting intensity calibration
-def get_calibration_poly():
-    calibration = []
-    calibrated_qs = []
+def get_calibration_poly(wlsel,ilamsel,new_dispersion_range2,visp_qs_obs,find_nearest,
+                         deg=6,low0=29,high0=29,low1=60,high1=150,
+                         low2=265,high2=290,low3=360,high3=400,low4=450,high4=480,
+                         low5=845,high5=870,low6=945,high6=965):
     
-    return calibration, calibrated_qs
+    sample_flaretime = visp_qs_obs
+    dispersion_range = new_dispersion_range2
+    
+    contwind0_1 = np.mean(sample_flaretime[low0:high0])
+    contwind0_1_wave = np.mean(dispersion_range[low0:high0])
+    contwind1 = np.mean(sample_flaretime[low1:high1])
+    contwind1_wave = np.mean(dispersion_range[low1:high1])
+    contwind2 = np.mean(sample_flaretime[low2:high2])
+    contwind2_wave = np.mean(dispersion_range[low2:high2])
+    contwind3 = np.mean(sample_flaretime[low3:high3])
+    contwind3_wave = np.mean(dispersion_range[low3:high3])
+    contwind4 = np.mean(sample_flaretime[low4:high4])
+    contwind4_wave = np.mean(dispersion_range[low4:high4])
+    contwind5 = np.mean(sample_flaretime[low5:high5])
+    contwind5_wave = np.mean(dispersion_range[low5:high5])
+    contwind6 = np.mean(sample_flaretime[low6:high6])
+    contwind6_wave = np.mean(dispersion_range[low6:high6])
+
+
+    cont_int_array = [contwind0_1,contwind1,contwind2,contwind3,
+                      contwind4,contwind5,contwind6]
+    cont_int_wave_array = [contwind0_1_wave,contwind1_wave,
+                           contwind2_wave,contwind3_wave,
+                           contwind4_wave,contwind5_wave,
+                           contwind6_wave]
+
+    obs_cont_loc = []
+    fts_cont_loc = []
+
+    for i in cont_int_wave_array:
+        obs_cont_loc.append(find_nearest(new_dispersion_range2,i)[1])
+        fts_cont_loc.append(find_nearest(wlsel,i)[1])
+    
+    flux_obs = visp_qs_obs
+
+    cont_flux_obs = np.take(flux_obs,obs_cont_loc)
+    cont_flux_fts = np.take(ilamsel,fts_cont_loc)
+    
+    cont_mult_facts = cont_flux_fts/cont_flux_obs
+    
+    return cont_mult_facts
 
 def plot_calibration(new_dispersion_range, calibrated_qs, wlsel, ilamsel,
                      pid='pid_1_84',wl=854.207):
