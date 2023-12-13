@@ -63,16 +63,16 @@ clv_corr = DKISTanalysis.limbdarkening(wl, mu=mu, nm=True)
 # two different starting coefficients - one for QS observations, one for 
 # flare-time observations
 startstepqs = 0
-startstepflare = 0
+startstepflare = 2500
 
 # process multi-step raster - for qs time
 image_data_arr_arr_qs, rasterpos_qs, times_qs = \
-    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=1,
+    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=1000,
                                    startstep=startstepqs)
     
 # process multi-step raster - flaretime
 image_data_arr_arr, rasterpos, times = \
-    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=1,
+    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=50,
                                    startstep=startstepflare)
     
 # spatial and dispersion axes for single observation (single slit step)
@@ -89,7 +89,8 @@ space_and_time_averaged_qs = \
                                  timelow=0,timehigh=5)
 
 # telluric lines for comparison (or other absorption lines if telluric not 
-# available, as is the case for the Ca II H window)
+# available, as is the case for the Ca II H window).  Most of the next steps
+# are not used for pid_1_38, but include in any case to model the use of lines
 line1 = 853.801
 line2 = 854.804
 
@@ -107,11 +108,16 @@ new_dispersion_range, rat = \
 
 # final calibration - the output of above function is good as "initial guess"
 # to find best chi-squared fit with this function, below 
+
+# but for pid_1_38, observations are not in a quiet sun region, so this function
+# really just takes a single index to compare the atlas and the observations
+# and uses that as the multiplicative factor
 calibration, calibrated_qs,new_dispersion_range2= \
     DKISTanalysis.get_calibration_singleval(dispersion_range,\
                                             space_and_time_averaged_qs,\
                                                 wlsel,ilamsel,\
-                                                    limbdark_fact=clv_corr)
+                                                    limbdark_fact=clv_corr,
+                                                    noqs_flag = 1)
 
 # plotting intensity calibration results
 DKISTanalysis.plot_calibration(new_dispersion_range2,calibrated_qs,wlsel,ilamsel,
@@ -124,7 +130,7 @@ nonflare_multfact = np.full(len(dispersion_range), calibration[0])
 # intensity calibration, background subtraction                            
 scaled_flare_time, bkgd_subtract_flaretime = \
     DKISTanalysis.scaling(image_data_arr_arr, nonflare_multfact, clv_corr,
-                          nonflare_average)
+                          nonflare_average,end=1)
 
 
 # equivalent widths, effective widths, widths
@@ -133,6 +139,9 @@ caII_8542_high_foravg = 565
 
 caII_8542_low = 500
 caII_8542_high = 600
+
+caII_8542_low_for_fit = 490
+caII_8542_high_for_fit = 610
 
 spacelow = 1200
 spacehigh = 2000
@@ -204,26 +213,29 @@ selwl = dispersion_range[caII_8542_low:caII_8542_high]
 #                              caII_8542_low,caII_8542_high,store_ten_width,
 #                              store_quarter_width,store_half_width)
     
+nimg = 20
 # output fit parameters
-fits_1g,fits_2g,fits_2gneg = \
+fits_1g,fits_2g,fits_2gneg,= \
     DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,new_dispersion_range2,
-                                  times, caII_8542_low, caII_8542_high,
+                                  times, caII_8542_low_for_fit, 
+                                  caII_8542_high_for_fit,
                                   DKISTanalysis.double_gaussian, 
                                   DKISTanalysis.gaussian, 
                                   selwl,sel,[1.1,854.28,0.05],
-                                  [.3e6,854.2,0.007,.6e6,854.22,0.02],
+                                  [.3e6,wl-0.01,0.01,.1e6,854.22,0.01],
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
                                   maxindices,pid='pid_1_38', date = '04/20/2022',
-                                  line = 'Ca II 854.2',nimg = 500)
+                                  line = 'Ca II 854.2',nimg = nimg)
     
 # plot results of Gaussian fitting
+# yhigh will set the maximum for 
 DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,new_dispersion_range2,
                             DKISTanalysis.double_gaussian,
                             DKISTanalysis.gaussian,times,muted,caII_8542_low,
                             caII_8542_high,fits_1g,fits_2g,fits_2gneg,
                             maxindices,pid='pid_1_38', date = '04202022',
-                            line = 'Ca 854.2', nimg = 500, nrow=4,ncol=5,
-                            note=', earliest?',lim=0.1,lamb0=854.209)
+                            line = 'Ca 854.2', nimg =nimg, nrow=4,ncol=5,
+                            note=', testing 12_12',lim=0.1,lamb0=wl)
     
 
 

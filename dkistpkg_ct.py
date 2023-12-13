@@ -322,7 +322,8 @@ def multistepprocess(path,folder1,dir_list2,div=10,startstep=0):
     times = []
     
     # extract relevant information
-    for i in range(0,round(len(dir_list2)/div)-startstep,1):
+    for i in range(0,round(len(dir_list2)/div),1):
+        
         i_file = fits.open(path+folder1+'/'+dir_list2[i+startstep])
         times.append(i_file[1].header['DATE-BEG'])
         i_data = i_file[1].data[0]
@@ -840,7 +841,9 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                     times_raster1, line_low, line_high,
                     double_gaussian, gaussian, selwl,sel,paramsgauss,
                     params2gauss,params2gaussneg,maxinds,pid='pid_1_84',
-                    date = '08/09/2022',line = 'Ca II H',nimg = 7):
+                    date = '08/09/2022',line = 'Ca II H',nimg = 7,
+                    inds=[410,460,510,520,590,600,610,620,630,640,650,660,670,680,690,700,
+                          720]):
     # More flexible line fitting routines; currently for Ca II H as observed
     # in pid_1_84, but flexible for application to other lines.  Currently also
     # only includes functinoality for single Gaussian and double Gaussian fits;
@@ -848,6 +851,8 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     
     # Returns, via scipy.optimize.curve_fit, both the fit parameters and the 
     # error metrics for each model
+    
+    # defaults currently for pid_1_38
     
     fits_1g = []
     fits_2g = []
@@ -859,9 +864,27 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     for j in range(nimg):
         kernind = maxinds[j]
         if l == 0:
+             
+            cont_int_array = bkgd_subtract_flaretime[j,inds,kernind]
+            cont_int_wave_array = dispersion_range[inds]
+            deg = 7
+            p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
+            nolines = p(dispersion_range)
             selwl = dispersion_range[line_low:line_high]
             sel = bkgd_subtract_flaretime[j,line_low:line_high,kernind]-\
-                min(bkgd_subtract_flaretime[j,line_low:line_high,kernind]) 
+                nolines[line_low:line_high]
+                
+            
+            
+            if j == 0:
+                fig,ax=plt.subplots()
+                ax.plot(selwl,sel)
+                ax.plot(dispersion_range,nolines)
+                ax.plot(dispersion_range,bkgd_subtract_flaretime[j,:,kernind])
+                ax.set_xlim([dispersion_range[0],dispersion_range[-1]])
+                plt.show()
+                
+                
             try:
                 fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, 
                                             p0=params2gauss,
@@ -886,10 +909,15 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     for i in range(nimg):
         
         kernind = maxinds[i]
+        cont_int_array = bkgd_subtract_flaretime[j,inds,kernind]
+        cont_int_wave_array = dispersion_range[inds]
+        deg = 7
+        p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
+        nolines = p(dispersion_range)
         selwl = dispersion_range[line_low:line_high]
-        sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
-            min(bkgd_subtract_flaretime[i,line_low:line_high,kernind])
-        
+        sel = bkgd_subtract_flaretime[j,line_low:line_high,kernind]-\
+            nolines[line_low:line_high]
+                
         try:
             
             fit1g, fit1gcov = curve_fit(gaussian,selwl,sel,p0=paramsgauss)
@@ -917,7 +945,9 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   pid='pid_1_84',
                   date = '08092022',line = 'Ca II H',nimg = 7,nrow=2,ncol=4,
                   lamb0 = 396.85,c=2.99e5,
-                  note='',lim=0.3e6):
+                  note='',lim=0.3e6,
+                  yhigh=1.5e6,inds=[410,460,510,520,590,600,610,620,630,640,650,660,670,680,690,700,
+                        720]):
     
     # plotting of the output of "fittingroutines"; can expand to beyond first
     # few image frames.  Tested 1 Dec 2023 for pid_1_84 Ca II H but not beyond
@@ -949,8 +979,15 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
     for i in range(nimg):
         kernind = maxinds[i]
         
+        kernind = maxinds[i]
+        cont_int_array = bkgd_subtract_flaretime[i,inds,kernind]
+        cont_int_wave_array = dispersion_range[inds]
+        deg = 7
+        p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
+        nolines = p(dispersion_range)
+        selwl = dispersion_range[line_low:line_high]
         sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
-            min(bkgd_subtract_flaretime[i,line_low:line_high,kernind])
+            nolines[line_low:line_high]
         
         if i == 0:
             maxprofile = max(sel)
@@ -1009,6 +1046,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                                                      functions=(veltrans,wltrans))
             ax.flatten()[l].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))  
             ax.flatten()[l].set_title(times[i])
+            ax.flatten()[l].set_ylim([0,yhigh])
             
     secaxx = ax.flatten()[0].secondary_xaxis('top', functions=(veltrans,wltrans))
     secaxx.set_xlabel(r'Velocity $[km\; s^{-1}]$')
@@ -1648,7 +1686,8 @@ def calib_qs_shift(wlsel, ilamsel, dispersion_range, space_and_time_averaged_qs,
     return new_dispersion_range, rat
 
 def get_calibration_singleval(wave_obs, spec_obs, wave_atlas, spec_atlas, 
-                              limbdark_fact = 1.0, wave_idx=None, extra_weight=20., bounds=None):
+                              limbdark_fact = 1.0, wave_idx=None, extra_weight=20., bounds=None,
+                              noqs_flag = 0,noqs_ind = 20):
     """
     Get calibration offsets from fitting `spec_obs` to `spec_atlas`, assuming
     wavelength grids `wave_obs` and `wave_atlas`
@@ -1705,9 +1744,16 @@ def get_calibration_singleval(wave_obs, spec_obs, wave_atlas, spec_atlas,
     optim = differential_evolution(func_to_optimise, bounds)
     calibration = optim.x
     
+    # ONLY if observations have no quiet sun - choose index that most likely 
+    # corresponds to quiet sun, e.g. for pid_1_38
+    if noqs_flag == 1:
+        calibration[0] = spec_atlas[noqs_ind]/spec_obs[noqs_ind]
+    
     calibrated_qs = spec_obs * calibration[0]
     
     new_dispersion_range2 = wave_obs + (calibration[1])
+    
+
 
     return calibration, calibrated_qs, new_dispersion_range2
 
