@@ -37,7 +37,7 @@ matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 muted = DKISTanalysis.color_muted2()
 
 # path and file ID for ViSP data
-path = '/Volumes/ViSP_Aug_15_Aug_25_22/pid_1_84/'
+path = '/Volumes/ViSP_External/pid_1_84/'
 folder1 = 'AZVXV'
 
 # list of files in directory for DKIST/ViSP
