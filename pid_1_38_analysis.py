@@ -213,16 +213,16 @@ selwl = dispersion_range[caII_8542_low:caII_8542_high]
 #                              caII_8542_low,caII_8542_high,store_ten_width,
 #                              store_quarter_width,store_half_width)
     
-nimg = 20
+nimg = 333
 # output fit parameters
-fits_1g,fits_2g,fits_2gneg,= \
+fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind= \
     DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,new_dispersion_range2,
                                   times, caII_8542_low_for_fit, 
                                   caII_8542_high_for_fit,
                                   DKISTanalysis.double_gaussian, 
                                   DKISTanalysis.gaussian, 
                                   selwl,sel,[1.1,854.28,0.05],
-                                  [.3e6,wl-0.01,0.01,.1e6,854.22,0.01],
+                                  [.3e6,854.2,0.015,.5e6,854.22,0.015],
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
                                   maxindices,pid='pid_1_38', date = '04/20/2022',
                                   line = 'Ca II 854.2',nimg = nimg)

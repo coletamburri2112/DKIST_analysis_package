@@ -898,11 +898,13 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
             except RuntimeError:
                 continue
         elif l==1:
+            stopind = j
             break
             
     
     # redefine gaussian parameters based on result of initial fit
     params2gauss = fit2g
+    params2gaussnew = params2gauss
     paramsgauss = paramsgauss # should be fine based on initial gauss, with 1g
     
     print(params2gauss)
@@ -915,14 +917,14 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
         p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
         nolines = p(dispersion_range)
         selwl = dispersion_range[line_low:line_high]
-        sel = bkgd_subtract_flaretime[j,line_low:line_high,kernind]-\
+        sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
             nolines[line_low:line_high]
                 
         try:
             
             fit1g, fit1gcov = curve_fit(gaussian,selwl,sel,p0=paramsgauss)
             fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, 
-                                        p0=params2gauss,
+                                        p0=params2gaussnew,
                                         maxfev=5000)
             #fit2gneg, fit2gnegcov = curve_fit(double_gaussian,selwl,\ 
                 #sel,p0=params2gaussneg,maxfev=5000)
@@ -937,7 +939,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
         
         #fits_2gneg.append([fit2gneg,fit2gnegcov])
             
-    return fits_1g, fits_2g, fits_2gneg
+    return fits_1g, fits_2g, fits_2gneg, params2gaussnew,stopind
 
 def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   gaussian,times,muted,
