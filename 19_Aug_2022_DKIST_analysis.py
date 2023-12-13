@@ -113,7 +113,7 @@ DKISTanalysis.pltsubtract(dispersion_range,nonflare_average_avg,
 
 # equivalent widths, effective widths, widths
 caII_low = 480
-caII_high = 660
+caII_high = 650
 hep_low = 700
 hep_high = 850
 
@@ -188,7 +188,7 @@ store_ten_width, store_quarter_width, store_half_width = \
                              store_half_width)
     
 # output fit parameters
-fits_1g,fits_2g,fits_2gneg = \
+fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind = \
     DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                                   times_raster1, caII_low, caII_high,
                                   DKISTanalysis.double_gaussian, 
@@ -197,17 +197,19 @@ fits_1g,fits_2g,fits_2gneg = \
                                   [2e6,396.84,0.015,2e6,396.86,0.015],
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
                                   maxindices,pid='pid_1_84', date = '08/09/2022',
-                                  line = 'Ca II H',nimg = 7)
+                                  line = 'Ca II H',nimg = 7,
+                                  inds=[380,390,400,410,450,480,647,700,820,850,900])
 
 # plot results of Gaussian fitting
 
-note = ', testing more maxfeval'
+note = ', better bkgd_subtract'
 DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range,
                             DKISTanalysis.double_gaussian,
                             DKISTanalysis.gaussian,times_raster1,muted,
                             caII_low,caII_high,fits_1g,fits_2g,fits_2gneg,maxindices,
                             pid='pid_1_84', date = '08092022',line = 'Ca II H',
-                            nimg = 7, nrow=2,ncol=4,lamb0=wl,note=note)
+                            nimg = 7, nrow=2,ncol=4,lamb0=wl,note=note,yhigh=5e6,
+                            inds=[380,390,400,410,450,480,647,700,820,850,900])
     
 
 
