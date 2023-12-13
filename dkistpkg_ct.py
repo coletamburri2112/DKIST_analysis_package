@@ -911,7 +911,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     for i in range(nimg):
         
         kernind = maxinds[i]
-        cont_int_array = bkgd_subtract_flaretime[j,inds,kernind]
+        cont_int_array = bkgd_subtract_flaretime[i,inds,kernind]
         cont_int_wave_array = dispersion_range[inds]
         deg = 7
         p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))

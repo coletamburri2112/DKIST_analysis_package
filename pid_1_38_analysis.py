@@ -63,7 +63,7 @@ clv_corr = DKISTanalysis.limbdarkening(wl, mu=mu, nm=True)
 # two different starting coefficients - one for QS observations, one for 
 # flare-time observations
 startstepqs = 0
-startstepflare = 2500
+startstepflare = 2720
 
 # process multi-step raster - for qs time
 image_data_arr_arr_qs, rasterpos_qs, times_qs = \
@@ -72,7 +72,7 @@ image_data_arr_arr_qs, rasterpos_qs, times_qs = \
     
 # process multi-step raster - flaretime
 image_data_arr_arr, rasterpos, times = \
-    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=50,
+    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=83,
                                    startstep=startstepflare)
     
 # spatial and dispersion axes for single observation (single slit step)
@@ -213,7 +213,7 @@ selwl = dispersion_range[caII_8542_low:caII_8542_high]
 #                              caII_8542_low,caII_8542_high,store_ten_width,
 #                              store_quarter_width,store_half_width)
     
-nimg = 333
+nimg = 100
 # output fit parameters
 fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind= \
     DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,new_dispersion_range2,
@@ -222,7 +222,7 @@ fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind= \
                                   DKISTanalysis.double_gaussian, 
                                   DKISTanalysis.gaussian, 
                                   selwl,sel,[1.1,854.28,0.05],
-                                  [.3e6,854.2,0.015,.5e6,854.22,0.015],
+                                  [.3e6,854.2,0.01,.5e6,854.22,0.015],
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
                                   maxindices,pid='pid_1_38', date = '04/20/2022',
                                   line = 'Ca II 854.2',nimg = nimg)
@@ -235,7 +235,7 @@ DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,new_dispersion_range2,
                             caII_8542_high,fits_1g,fits_2g,fits_2gneg,
                             maxindices,pid='pid_1_38', date = '04202022',
                             line = 'Ca 854.2', nimg =nimg, nrow=4,ncol=5,
-                            note=', testing 12_12',lim=0.1,lamb0=wl)
+                            note='_only_flare_12_13_2023',lim=0.1,lamb0=wl)
     
 
 
