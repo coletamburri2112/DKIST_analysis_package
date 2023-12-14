@@ -900,6 +900,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
         elif l==1:
             stopind = j
             break
+        
             
     
     # redefine gaussian parameters based on result of initial fit
@@ -907,7 +908,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     params2gaussnew = params2gauss
     paramsgauss = paramsgauss # should be fine based on initial gauss, with 1g
     
-    print(params2gauss)
+    # print(params2gauss)
     for i in range(nimg):
         
         kernind = maxinds[i]
@@ -926,15 +927,22 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
             fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, 
                                         p0=params2gaussnew,
                                         maxfev=5000)
+            
+            #not iterative
+            fit2g_neg, fit2gcov_neg = curve_fit(double_gaussian,selwl,sel,
+                                                p0 = params2gaussneg,
+                                                maxfev=5000)
             #fit2gneg, fit2gnegcov = curve_fit(double_gaussian,selwl,\ 
                 #sel,p0=params2gaussneg,maxfev=5000)
                 
             fits_1g.append([fit1g,fit1gcov])
             fits_2g.append([fit2g,fit2gcov])
+            fits_2gneg.append([fit2g_neg,fit2gcov_neg])
             
         except RuntimeError:
             fits_1g.append(['NaN','NaN'])
             fits_2g.append(['NaN','NaN'])
+            fits_2gneg.append(['NaN','NaN'])
             continue
         
         #fits_2gneg.append([fit2gneg,fit2gnegcov])
