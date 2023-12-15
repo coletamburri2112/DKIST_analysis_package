@@ -691,7 +691,7 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
                      scaled_flare_time,bkgd_subtract_flaretime,
                      dispersion_range,deg=6,low0=29,high0=29,low1=60,high1=150,
                      low2=265,high2=290,low3=360,high3=400,low4=450,high4=480,
-                     low5=845,high5=870,low6=945,high6=965):
+                     low5=845,high5=870,low6=945,high6=965,end=5,deg=7):
     
     # determine equivanet widths, effective widths, line widths for single line
     
@@ -709,7 +709,7 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     # intensity-calibrated spectra (see description of effective vs. equivalent
     # with for justification)
     for j in range(np.shape(bkgd_subtract_flaretime)[2]):
-        for i in range(len(scaled_flare_time)-5):
+        for i in range(len(scaled_flare_time)-end):
             sample_flaretime = bkgd_subtract_flaretime[i,:,j]
             foreqw = scaled_flare_time[i,:,j]
             contwind0_1 = np.mean(sample_flaretime[low0:high0])
