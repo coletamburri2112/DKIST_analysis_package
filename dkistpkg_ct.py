@@ -828,6 +828,62 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     return ew_line_all_fs, eqw_line_all_fs, width_line_all_fs, int_line_all_fs
 
 # NOTE: Add plotting routine for widths?
+def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
+                             int_line_all_fs,maxindices,times,muted,pid='pid_1_84',nslitpos=4,raster=0,
+                             nframes=7):
+    
+    # defined quantites are all for pid_1_84
+    # raster is start position to begin tracking
+    # nslitpos is the number of slit positions in a scan
+
+    kernindews = []
+    kernindeqws = []
+    kernindwidths = []
+    kernindflxs = []
+    
+    timeshhmmss = []
+    
+    for i in range(len(times)):
+        timeshhmmss.append(times[i][-12:-4])
+
+    
+    for i in range(nframes):
+        kernindews.append(ew_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
+        kernindeqws.append(eqw_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
+        kernindwidths.append(width_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
+        kernindflxs.append(int_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
+    
+    fig,[[ax0,ax1],[ax2,ax3]]=plt.subplots(2,2,figsize=(10,10))
+    ax0.scatter(timeshhmmss[raster::nslitpos],kernindews,color=muted[0])
+    ax1.scatter(timeshhmmss[raster::nslitpos],kernindeqws,color=muted[1])
+    ax2.scatter(timeshhmmss[raster::nslitpos],kernindwidths,color=muted[2])
+    ax3.scatter(timeshhmmss[raster::nslitpos],kernindflxs,color=muted[3])
+    
+    ax0.set_title('Effective Widths')
+    ax1.set_title('Equivalent Widths')
+    ax2.set_title('Line Widths')
+    ax3.set_title('Line flux')
+    
+    ax0.grid()
+    ax1.grid()
+    ax2.grid()
+    ax3.grid()
+    
+    ax0.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
+    ax1.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
+    ax2.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
+    ax3.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
+    
+    fig.tight_layout(pad=5.0)
+    
+    plt.show()
+    
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+\
+                '/linecharacteristics.png')
+    
+    return None
+    
+    
 
 def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
               bkgd_subtract_flaretime,dispersion_range, double_gaussian_fit,
