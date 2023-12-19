@@ -829,13 +829,15 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
 
 # NOTE: Add plotting routine for widths?
 def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
-                             int_line_all_fs,maxindices,times,muted,pid='pid_1_84',nslitpos=4,raster=0,
-                             nframes=7,line='Ca II H'):
+                             int_line_all_fs,maxindices,times,muted,pid='pid_1_84',
+                             nslitpos=4,raster=0,nframes=7,line='Ca II H'):
     
     # defined quantites are all for pid_1_84
     # raster is start position to begin tracking
     # nslitpos is the number of slit positions in a scan
+    # nframes is number of raster scans loaded in the array 
 
+    # arrays to populate with specific kernel
     kernindews = []
     kernindeqws = []
     kernindwidths = []
@@ -843,19 +845,20 @@ def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     
     timeshhmmss = []
     
+    # times in correct format for plotting
     for i in range(len(times)):
         timeshhmmss.append(times[i][-12:-4])
 
     
+    # append correct value depending on kernel location defined by input array
     for i in range(nframes):
         kernindews.append(ew_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
         kernindeqws.append(eqw_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
         kernindwidths.append(width_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
         kernindflxs.append(int_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
     
-    print(np.shape(timeshhmmss[raster::nslitpos]))
-    print(np.shape(kernindews))
     
+    # plotting routines
     fig,[[ax0,ax1],[ax2,ax3]]=plt.subplots(2,2,figsize=(10,10))
     fig.suptitle(line+' Line Characteristics, '+pid+'',fontsize=25)
     ax0.plot(timeshhmmss[raster::nslitpos],kernindews,'-o',color=muted[0])
@@ -986,6 +989,8 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                 
                 
             try:
+                
+                #initial attempt at a fit
                 fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, 
                                             p0=params2gauss,
                                             maxfev=5000)
@@ -993,11 +998,13 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                 if fit2g[0]/fit2g[3] > 1 or np.abs(fit2g[4]-fit2g[1])>0.04:
                     continue
                 else:
+                    # appropriate fit found!
                     l=1
                 
             except RuntimeError:
                 continue
         elif l==1:
+            # ID the first time the fit was good
             stopind = j
             break
         
@@ -1056,26 +1063,34 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   date = '08092022',line = 'Ca II H',nimg = 7,nrow=2,ncol=4,
                   lamb0 = 396.85,c=2.99e5,
                   note='',lim=0.3e6,
-                  yhigh=1.5e6,inds=[410,460,510,520,590,600,610,620,630,640,650,660,670,680,690,700,
-                        720]):
+                  yhigh=1.5e6,inds=[410,460,510,520,590,600,610,620,630,640,650,
+                                    660,670,680,690,700,720]):
     
     # plotting of the output of "fittingroutines"; can expand to beyond first
     # few image frames.  Tested 1 Dec 2023 for pid_1_84 Ca II H but not beyond
     # this.
+    # "inds" is an array containing values for continuum or pseudo-continuum 
+    # locations in the images provided from DKIST.  Will vary based on line in
+    # question; default is for pid_1_84
     
+    # define path
     path = '/Users/coletamburri/Desktop/DKIST_analysis_package/'+\
                 pid+'/'
     if os.path.isdir(path) == False:
         os.mkdir(path)
         
+    # initialize plot
     fig, ax = plt.subplots(nrow,ncol,figsize=(30,15))
     fig.suptitle(line+' evolution w/ fitting, '+date+note,fontsize=20)
     
+    # select wavelengths of interest
     selwl = dispersion_range[line_low:line_high]
     
+    # change type
     if type(selwl) == list:
         selwl = np.array(selwl)
     
+    # different x-axes (doppler shift, for example, or deviation from central)
     selwlshift = selwl-lamb0
     
     selwlvel = (selwl/lamb0-1)*c
@@ -1087,6 +1102,8 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
         return (((x/c)+1)*lamb0)-lamb0
     
     for i in range(nimg):
+        
+        # define continuum for subtraction, similar to fitting routines above
         kernind = maxinds[i]
         cont_int_array = bkgd_subtract_flaretime[i,inds,kernind]
         cont_int_wave_array = dispersion_range[inds]
@@ -1104,10 +1121,12 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
             if maxprofilenow > maxprofile:
                 maxprofile = maxprofilenow
             
+        # fits in question
         fit1g = fits_1g[i][0]
         fit2g = fits_2g[i][0]
         #fit2gneg = fits_2gneg[i][0]
         
+        # plotting routines
         if i > 0 and i % (nrow*ncol) == 0:
             secaxx = ax.flatten()[0].secondary_xaxis('top', functions=(veltrans,
                                                                        wltrans))
@@ -1161,8 +1180,6 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
     ax.flatten()[0].set_xlabel(r' $\lambda$ - $\lambda_0$ [nm]')
     ax.flatten()[0].set_ylabel(r'Intensity (- $I_{min}$) $[W\; cm^{-2} sr^{-1} \AA^{-1}]$')
 
-
-    
     plt.tight_layout(pad = 4)
     plt.show()
     
