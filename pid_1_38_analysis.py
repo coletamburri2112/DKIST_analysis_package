@@ -197,6 +197,13 @@ ew_CaII_all_fs, eqw_CaII_all_fs,\
                                                 low5=616,high5=645,low6=692,
                                                 high6=715,alt=1,altinds=altinds)
         
+# plot results of line characteristics - widths, strengths, fluxes
+DKISTanalysis.plt_line_characteristics(ew_CaII_all_fs,eqw_CaII_all_fs,
+                                       width_CaII_all_fs, int_CaII_all_fs,
+                                       maxindices,times,muted,pid='pid_1_38',
+                                       nslitpos=45,raster=0,nframes=10,
+                                       line='Ca II 8542')
+        
 # Gaussian fitting
 # automate for all timesteps
 storeamp1 = []
@@ -211,7 +218,7 @@ sel = bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,maxindices[0]]-\
     min(bkgd_subtract_flaretime[0,caII_8542_low:caII_8542_high,maxindices[0]])
 selwl = dispersion_range[caII_8542_low:caII_8542_high]
         
-# # width determination
+# # width determination - percentage levels - untested
 # store_ten_width = []
 # store_quarter_width = []
 # store_half_width = []
