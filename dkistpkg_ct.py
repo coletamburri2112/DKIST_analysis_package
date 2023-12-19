@@ -866,7 +866,7 @@ def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     ax0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm]',fontsize=15)
     ax1.set_ylabel(r'$\Delta\lambda_{eq}$ [nm]',fontsize=15)
     ax2.set_ylabel(r'$\Delta\lambda$ [nm]',fontsize=15)
-    ax3.set_ylabel(r'$Radiance [W/cm^2/sr]$',fontsize=15)
+    ax3.set_ylabel(r'Radiance [$W/cm^2/sr$]',fontsize=15)
     
     
     ax0.set_title('Effective Widths',fontsize=20)
