@@ -799,7 +799,7 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
             eqw_line = integrate.cumtrapz(integrand2[line_low:line_high],
                                           dispersion_range[line_low:line_high])\
                 [-1]
-            int_line = integrate.cumtrapz(sel,selwl)[-1]
+            int_line = integrate.cumtrapz(sel,selwl)[-1]*10
             print(int_line)
             print(i)
             print(j)
@@ -830,7 +830,7 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
 # NOTE: Add plotting routine for widths?
 def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
                              int_line_all_fs,maxindices,times,muted,pid='pid_1_84',nslitpos=4,raster=0,
-                             nframes=7):
+                             nframes=7,line='Ca II H'):
     
     # defined quantites are all for pid_1_84
     # raster is start position to begin tracking
@@ -853,16 +853,26 @@ def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
         kernindwidths.append(width_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
         kernindflxs.append(int_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
     
-    fig,[[ax0,ax1],[ax2,ax3]]=plt.subplots(2,2,figsize=(10,10))
-    ax0.scatter(timeshhmmss[raster::nslitpos],kernindews,color=muted[0])
-    ax1.scatter(timeshhmmss[raster::nslitpos],kernindeqws,color=muted[1])
-    ax2.scatter(timeshhmmss[raster::nslitpos],kernindwidths,color=muted[2])
-    ax3.scatter(timeshhmmss[raster::nslitpos],kernindflxs,color=muted[3])
+    print(np.shape(timeshhmmss[raster::nslitpos]))
+    print(np.shape(kernindews))
     
-    ax0.set_title('Effective Widths')
-    ax1.set_title('Equivalent Widths')
-    ax2.set_title('Line Widths')
-    ax3.set_title('Line flux')
+    fig,[[ax0,ax1],[ax2,ax3]]=plt.subplots(2,2,figsize=(10,10))
+    fig.suptitle(line+' Line Characteristics, '+pid+'',fontsize=25)
+    ax0.plot(timeshhmmss[raster::nslitpos],kernindews,'-o',color=muted[0])
+    ax1.plot(timeshhmmss[raster::nslitpos],kernindeqws,'-o',color=muted[1])
+    ax2.plot(timeshhmmss[raster::nslitpos],kernindwidths,'-o',color=muted[2])
+    ax3.plot(timeshhmmss[raster::nslitpos],kernindflxs,'-o',color=muted[3])
+    
+    ax0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm]',fontsize=15)
+    ax1.set_ylabel(r'$\Delta\lambda_{eq}$ [nm]',fontsize=15)
+    ax2.set_ylabel(r'$\Delta\lambda$ [nm]',fontsize=15)
+    ax3.set_ylabel(r'$Radiance [W/cm^2/sr]$',fontsize=15)
+    
+    
+    ax0.set_title('Effective Widths',fontsize=20)
+    ax1.set_title('Equivalent Widths',fontsize=20)
+    ax2.set_title('Line Widths',fontsize=20)
+    ax3.set_title('Line flux',fontsize=20)
     
     ax0.grid()
     ax1.grid()
