@@ -72,7 +72,7 @@ image_data_arr_arr_qs, rasterpos_qs, times_qs = \
     
 # process multi-step raster - flaretime
 image_data_arr_arr, rasterpos, times = \
-    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=83,
+    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=20,
                                    startstep=startstepflare)
     
 # spatial and dispersion axes for single observation (single slit step)
@@ -167,27 +167,35 @@ sample_flaretime = bkgd_subtract_flaretime[0,:,maxindices[0]]
     # DKISTanalysis.contwind(sample_flaretime,dispersion_range,maxindices,avgs,
                            # low,high)
 
+end = 1
 # line widths, strengths initial arrays
-# ew_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
-#                            np.shape(bkgd_subtract_flaretime)[2]))
-# eqw_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
-#                             np.shape(bkgd_subtract_flaretime)[2]))
-# width_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
-#                               np.shape(bkgd_subtract_flaretime)[2]))
+ew_CaII_all_fs = np.zeros((len(scaled_flare_time)-end,
+                            np.shape(bkgd_subtract_flaretime)[2]))
+eqw_CaII_all_fs = np.zeros((len(scaled_flare_time)-end,
+                            np.shape(bkgd_subtract_flaretime)[2]))
+width_CaII_all_fs = np.zeros((len(scaled_flare_time)-end,
+                              np.shape(bkgd_subtract_flaretime)[2]))
+int_CaII_all_fs = np.zeros((len(scaled_flare_time)-end,
+                              np.shape(bkgd_subtract_flaretime)[2]))
+
+altinds=[410,460,510,520,590,600,610,620,630,640,650,660,670,680,690,700,
+      720]
 
 # # line widths, strength determination
-# ew_CaII_all_fs, eqw_CaII_all_fs,\
-#     width_CaII_all_fs = \
-#         DKISTanalysis.widths_strengths_oneline(ew_CaII_all_fs,eqw_CaII_all_fs,
-#                                                width_CaII_all_fs,caII_8542_low,
-#                                                caII_8542_high,scaled_flare_time,
-#                                                bkgd_subtract_flaretime,
-#                                                dispersion_range,deg=6,low0=105,
-#                                                high0=134,low1=185,high1=202,
-#                                                low2=290,high2=306,low3=357,
-#                                                high3=370,low4=446,high4=464,
-#                                                low5=616,high5=645,low6=692,
-#                                                high6=715)
+ew_CaII_all_fs, eqw_CaII_all_fs,\
+    width_CaII_all_fs, int_CaII_all_fs= \
+        DKISTanalysis.widths_strengths_oneline(ew_CaII_all_fs,eqw_CaII_all_fs,
+                                                width_CaII_all_fs,int_CaII_all_fs,
+                                                caII_8542_low,caII_8542_high,
+                                                scaled_flare_time,
+                                                bkgd_subtract_flaretime,
+                                                dispersion_range,maxindices,
+                                                deg=7,low0=105,
+                                                high0=134,low1=185,high1=202,
+                                                low2=290,high2=306,low3=357,
+                                                high3=370,low4=446,high4=464,
+                                                low5=616,high5=645,low6=692,
+                                                high6=715,alt=1,altinds=altinds)
         
 # Gaussian fitting
 # automate for all timesteps

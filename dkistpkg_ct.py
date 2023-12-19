@@ -687,16 +687,21 @@ def widths_strengths(ew_CaII_all_fs,eqw_CaII_all_fs,width_CaII_all_fs,
         width_CaII_all_fs, width_hep_all_fs
         
 def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
-                     line_low,line_high,
-                     scaled_flare_time,bkgd_subtract_flaretime,
-                     dispersion_range,deg=6,low0=29,high0=29,low1=60,high1=150,
-                     low2=265,high2=290,low3=360,high3=400,low4=450,high4=480,
-                     low5=845,high5=870,low6=945,high6=965):
+                             int_line_all_fs,line_low,line_high,scaled_flare_time,
+                             bkgd_subtract_flaretime,dispersion_range,maxinds,
+                             low0=29,high0=29,low1=60,high1=150,low2=265,
+                             high2=290,low3=360,high3=400,low4=450,high4=480,
+                             low5=845,high5=870,low6=945,high6=965,end=5,deg=7,
+                             alt=0,
+                             altinds = [380, 390, 400, 410, 450, 480, 647, 700,\
+                                        820, 850, 900]):
     
     # determine equivanet widths, effective widths, line widths for single line
     
     # Uses pseudo-continuum polynomial determination similar to that described
     # in function above; see that doc for description
+    
+    # deg = 7 is best for pid_1_38, deg = 6 for pid_1_84
     
     avgs = []
     for i in range(len(scaled_flare_time)):
@@ -709,54 +714,78 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     # intensity-calibrated spectra (see description of effective vs. equivalent
     # with for justification)
     for j in range(np.shape(bkgd_subtract_flaretime)[2]):
-        for i in range(len(scaled_flare_time)-5):
-            sample_flaretime = bkgd_subtract_flaretime[i,:,j]
-            foreqw = scaled_flare_time[i,:,j]
-            contwind0_1 = np.mean(sample_flaretime[low0:high0])
-            contwind0_1eq = np.mean(foreqw[low0:high0])
-            contwind0_1_wave = np.mean(dispersion_range[low0:high0])
-            contwind1eq = np.mean(foreqw[low1:high1])
-            contwind1 = np.mean(sample_flaretime[low1:high1])
-            contwind1_wave = np.mean(dispersion_range[low1:high1])
-            contwind2eq = np.mean(foreqw[low2:high2])
-            contwind2 = np.mean(sample_flaretime[low2:high2])
-            contwind2_wave = np.mean(dispersion_range[low2:high2])
-            contwind3eq = np.mean(foreqw[low3:high3])
-            contwind3 = np.mean(sample_flaretime[low3:high3])
-            contwind3_wave = np.mean(dispersion_range[low3:high3])
-            contwind4eq = np.mean(foreqw[low4:high4])
-            contwind4 = np.mean(sample_flaretime[low4:high4])
-            contwind4_wave = np.mean(dispersion_range[low4:high4])
-            contwind5eq = np.mean(foreqw[low5:high5])
-            contwind5 = np.mean(sample_flaretime[low5:high5])
-            contwind5_wave = np.mean(dispersion_range[low5:high5])
-            contwind6eq = np.mean(foreqw[low6:high6])
-            contwind6 = np.mean(sample_flaretime[low6:high6])
-            contwind6_wave = np.mean(dispersion_range[low6:high6])
-    
-            cont_int_arrayeqw = [contwind0_1eq,contwind1eq,contwind2eq,
-                                 contwind3eq,contwind4eq,contwind5eq,contwind6eq]
-    
-            cont_int_array = [contwind0_1,contwind1,contwind2,contwind3,
-                              contwind4,contwind5,contwind6]
-            cont_int_wave_array = [contwind0_1_wave,contwind1_wave,
-                                   contwind2_wave,contwind3_wave,
-                                   contwind4_wave,contwind5_wave,
-                                   contwind6_wave]
-    
-            deg = 6
-    
-            p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
-    
-            peq = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_arrayeqw,
-                                       deg))
-    
-            nolines = p(dispersion_range)
-            nolineseq = peq(dispersion_range)
-    
-            maxind = np.argmax(sample_flaretime)
-            maxint = sample_flaretime[maxind]
-            maxcont = nolines[maxind]
+        for i in range(len(scaled_flare_time)-end):
+            
+            # two methods - averaging continuum windows (pid_1_84) is ind = 0
+            if alt == 0:
+                sample_flaretime = bkgd_subtract_flaretime[i,:,j]
+                foreqw = scaled_flare_time[i,:,j]
+                contwind0_1 = np.mean(sample_flaretime[low0:high0])
+                contwind0_1eq = np.mean(foreqw[low0:high0])
+                contwind0_1_wave = np.mean(dispersion_range[low0:high0])
+                contwind1eq = np.mean(foreqw[low1:high1])
+                contwind1 = np.mean(sample_flaretime[low1:high1])
+                contwind1_wave = np.mean(dispersion_range[low1:high1])
+                contwind2eq = np.mean(foreqw[low2:high2])
+                contwind2 = np.mean(sample_flaretime[low2:high2])
+                contwind2_wave = np.mean(dispersion_range[low2:high2])
+                contwind3eq = np.mean(foreqw[low3:high3])
+                contwind3 = np.mean(sample_flaretime[low3:high3])
+                contwind3_wave = np.mean(dispersion_range[low3:high3])
+                contwind4eq = np.mean(foreqw[low4:high4])
+                contwind4 = np.mean(sample_flaretime[low4:high4])
+                contwind4_wave = np.mean(dispersion_range[low4:high4])
+                contwind5eq = np.mean(foreqw[low5:high5])
+                contwind5 = np.mean(sample_flaretime[low5:high5])
+                contwind5_wave = np.mean(dispersion_range[low5:high5])
+                contwind6eq = np.mean(foreqw[low6:high6])
+                contwind6 = np.mean(sample_flaretime[low6:high6])
+                contwind6_wave = np.mean(dispersion_range[low6:high6])
+        
+                cont_int_arrayeqw = [contwind0_1eq,contwind1eq,contwind2eq,
+                                     contwind3eq,contwind4eq,contwind5eq,contwind6eq]
+        
+                cont_int_array = [contwind0_1,contwind1,contwind2,contwind3,
+                                  contwind4,contwind5,contwind6]
+                cont_int_wave_array = [contwind0_1_wave,contwind1_wave,
+                                       contwind2_wave,contwind3_wave,
+                                       contwind4_wave,contwind5_wave,
+                                       contwind6_wave]
+        
+        
+                p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
+        
+                peq = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_arrayeqw,
+                                           deg))
+        
+                nolines = p(dispersion_range)
+                nolineseq = peq(dispersion_range)
+        
+                maxind = np.argmax(sample_flaretime)
+                maxint = sample_flaretime[maxind]
+                maxcont = nolines[maxind]
+                selwl = dispersion_range[line_low:line_high]
+                sel = bkgd_subtract_flaretime[i,line_low:line_high,j]-\
+                    nolines[line_low:line_high]
+                
+            #second is just taking points from the continuum, in altinds
+            elif alt == 1: 
+                sample_flaretime = bkgd_subtract_flaretime[i,:,j]
+                foreqw = scaled_flare_time[i,:,j]
+                cont_int_array = bkgd_subtract_flaretime[i,altinds,j]
+                cont_int_wave_array = [dispersion_range[i] for i in altinds]
+                cont_int_arrayeqw = foreqw[altinds]
+                p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
+                peq = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_arrayeqw,deg))
+                nolines = p(dispersion_range)
+                nolineseq = peq(dispersion_range)
+                maxind = np.argmax(sample_flaretime)
+                maxint = sample_flaretime[maxind]
+                maxcont = nolines[maxind]
+                selwl = dispersion_range[line_low:line_high]
+                sel = bkgd_subtract_flaretime[i,line_low:line_high,j]-\
+                    nolines[line_low:line_high]
+                
     
             integrand = (sample_flaretime-nolines)/(maxint-maxcont)
             normflux = np.divide(foreqw,nolineseq)
@@ -770,9 +799,14 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
             eqw_line = integrate.cumtrapz(integrand2[line_low:line_high],
                                           dispersion_range[line_low:line_high])\
                 [-1]
+            int_line = integrate.cumtrapz(sel,selwl)[-1]*10
+            print(int_line)
+            print(i)
+            print(j)
 
             ew_line_all_fs[i,j]=ew_line
             eqw_line_all_fs[i,j]=eqw_line
+            int_line_all_fs[i,j]=int_line
             
             line_isolate = sample_flaretime[line_low:line_high]
             minline = min(line_isolate)
@@ -791,9 +825,75 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     
             width_line_all_fs[i,j]=widthAng_line
         
-    return ew_line_all_fs, eqw_line_all_fs, width_line_all_fs
+    return ew_line_all_fs, eqw_line_all_fs, width_line_all_fs, int_line_all_fs
 
 # NOTE: Add plotting routine for widths?
+def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
+                             int_line_all_fs,maxindices,times,muted,pid='pid_1_84',nslitpos=4,raster=0,
+                             nframes=7,line='Ca II H'):
+    
+    # defined quantites are all for pid_1_84
+    # raster is start position to begin tracking
+    # nslitpos is the number of slit positions in a scan
+
+    kernindews = []
+    kernindeqws = []
+    kernindwidths = []
+    kernindflxs = []
+    
+    timeshhmmss = []
+    
+    for i in range(len(times)):
+        timeshhmmss.append(times[i][-12:-4])
+
+    
+    for i in range(nframes):
+        kernindews.append(ew_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
+        kernindeqws.append(eqw_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
+        kernindwidths.append(width_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
+        kernindflxs.append(int_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
+    
+    print(np.shape(timeshhmmss[raster::nslitpos]))
+    print(np.shape(kernindews))
+    
+    fig,[[ax0,ax1],[ax2,ax3]]=plt.subplots(2,2,figsize=(10,10))
+    fig.suptitle(line+' Line Characteristics, '+pid+'',fontsize=25)
+    ax0.plot(timeshhmmss[raster::nslitpos],kernindews,'-o',color=muted[0])
+    ax1.plot(timeshhmmss[raster::nslitpos],kernindeqws,'-o',color=muted[1])
+    ax2.plot(timeshhmmss[raster::nslitpos],kernindwidths,'-o',color=muted[2])
+    ax3.plot(timeshhmmss[raster::nslitpos],kernindflxs,'-o',color=muted[3])
+    
+    ax0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm]',fontsize=15)
+    ax1.set_ylabel(r'$\Delta\lambda_{eq}$ [nm]',fontsize=15)
+    ax2.set_ylabel(r'$\Delta\lambda$ [nm]',fontsize=15)
+    ax3.set_ylabel(r'$Radiance [W/cm^2/sr]$',fontsize=15)
+    
+    
+    ax0.set_title('Effective Widths',fontsize=20)
+    ax1.set_title('Equivalent Widths',fontsize=20)
+    ax2.set_title('Line Widths',fontsize=20)
+    ax3.set_title('Line flux',fontsize=20)
+    
+    ax0.grid()
+    ax1.grid()
+    ax2.grid()
+    ax3.grid()
+    
+    ax0.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
+    ax1.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
+    ax2.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
+    ax3.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
+    
+    fig.tight_layout(pad=5.0)
+    
+    plt.show()
+    
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+\
+                '/linecharacteristics.png')
+    
+    return None
+    
+    
 
 def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
               bkgd_subtract_flaretime,dispersion_range, double_gaussian_fit,
