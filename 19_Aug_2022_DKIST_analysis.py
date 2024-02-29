@@ -53,6 +53,8 @@ wl = 396.847 # central wavelength, Ca II H
 hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu, doppshrel,\
     doppshnonrel = \
     DKISTanalysis.spatialinit(path,folder1,dir_list2,lon,lat,wl)
+    
+print(mu)
 
 # get limb darkening coefficient 
 clv_corr = DKISTanalysis.limbdarkening(wl, mu=mu, nm=True)
@@ -69,13 +71,13 @@ spatial_range, dispersion_range = DKISTanalysis.spatialaxis(path,folder1,
 
 #only for 19 August observations, really - the QS will be different for others
 nonflare_average = np.load('/Users/coletamburri/Desktop/'+\
-                           'bolow_nonflare_average.npy')
+                           'DKIST_Data/bolow_nonflare_average.npy')
 nonflare_stdevs = np.load('/Users/coletamburri/Desktop/'+\
-                          'bolow_nonflare_stdevs.npy')
+                          'DKIST_Data/bolow_nonflare_stdevs.npy')
 nonflare_fitvals = np.load('/Users/coletamburri/Desktop/'+\
-                           'bolow_nonflare_fit_vals.npy')
+                           'DKIST_Data/bolow_nonflare_fit_vals.npy')
 nonflare_multfact = np.load('/Users/coletamburri/Desktop/'+\
-                            'bolow_nonflare_mult_fact.npy')
+                            'DKIST_Data/bolow_nonflare_mult_fact.npy')
     
 # simplify the quiet sun for comparison to flaretime
 nonflare_average_avg = np.mean(nonflare_average,axis=1)
@@ -202,12 +204,12 @@ fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind = \
 
 # plot results of Gaussian fitting
 
-note = ', better bkgd_subtract'
+note = ', adjust with mu angle'
 DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range,
                             DKISTanalysis.double_gaussian,
                             DKISTanalysis.gaussian,times_raster1,muted,
                             caII_low,caII_high,fits_1g,fits_2g,fits_2gneg,maxindices,
-                            pid='pid_1_84', date = '08092022',line = 'Ca II H',
+                            mu, pid='pid_1_84', date = '08092022',line = 'Ca II H',
                             nimg = 7, nrow=2,ncol=4,lamb0=wl,note=note,yhigh=5e6,
                             inds=[380,390,400,410,450,480,647,700,820,850,900])
     

@@ -75,7 +75,8 @@ def double_gaussian( x, c1, mu1, sigma1, c2, mu2, sigma2 ):
     return res
 
 def double_gaussian_fit( params ,selwl,sel):
-    fit = double_gaussian( selwl, params )
+    fit = double_gaussian( selwl, params[0],params[1],params[2],params[3],
+                          params[4],params[5] )
     return (fit - sel)
 
 def numgreaterthan(array,value):
@@ -913,11 +914,12 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
                  ,fontsize=35)
     
     for i in range(np.shape(bkgd_subtract_flaretime)[0]):
-        selwl = dispersion_range[caII_low,caII_high]
+        selwl = dispersion_range[caII_low:caII_high]
         sel = bkgd_subtract_flaretime[i,caII_low:caII_high,1350]-\
             min(bkgd_subtract_flaretime[i,caII_low:caII_high,1350])
         fit = leastsq(double_gaussian_fit,parameters,(selwl,sel))
         [c1,mu1,sigma1,c2,mu2,sigma2] = fit[0]
+        print(fit[0][0])
         storeamp1.append(c1)
         storemu1.append(mu1)
         storesig1.append(sigma1)
@@ -925,9 +927,9 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
         storemu2.append(mu2)
         storesig2.append(sigma2)
         ax.flatten()[i].plot(selwl,sel)
-        ax.flatten()[i].plot(selwl, double_gaussian( selwl, fit[0] ))
-        ax.flatten()[i].plot(selwl,gaussian(selwl,fit[0][0:3]),c='g')
-        ax.flatten()[i].plot(selwl,gaussian(selwl,fit[0][3:6]),c='g')
+        ax.flatten()[i].plot(selwl, double_gaussian( selwl,fit[0][0],fit[0][1],fit[0][2],fit[0][3],fit[0][4],fit[0][5]))
+        ax.flatten()[i].plot(selwl,gaussian(selwl,fit[0][0],fit[0][1],fit[0][2]),c='g')
+        ax.flatten()[i].plot(selwl,gaussian(selwl,fit[0][3],fit[0][4],fit[0][5]),c='g')
         ax.flatten()[i].axis(ymin=0,ymax=4.3e6)
         ax.flatten()[i].set_title(times_raster1[i],fontsize=30)
         ax.flatten()[i].grid()
@@ -1058,7 +1060,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
 
 def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   gaussian,times,muted,
-                  line_low,line_high,fits_1g,fits_2g,fits_2gneg,maxinds,
+                  line_low,line_high,fits_1g,fits_2g,fits_2gneg,maxinds,mu,
                   pid='pid_1_84',
                   date = '08092022',line = 'Ca II H',nimg = 7,nrow=2,ncol=4,
                   lamb0 = 396.85,c=2.99e5,
@@ -1096,10 +1098,10 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
     selwlvel = (selwl/lamb0-1)*c
     
     def veltrans(x):
-        return (((x+lamb0)/lamb0)-1)*c
+        return ((((x+lamb0)/lamb0)-1)*c)/mu
     
     def wltrans(x):
-        return (((x/c)+1)*lamb0)-lamb0
+        return ((((x/c)+1)*lamb0)-lamb0)
     
     for i in range(nimg):
         
