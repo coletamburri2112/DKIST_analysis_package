@@ -960,7 +960,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                     params2gauss,params2gaussneg,maxinds,pid='pid_1_84',
                     date = '08/09/2022',line = 'Ca II H',nimg = 7,
                     inds=[410,460,510,520,590,600,610,620,630,640,650,660,670,680,690,700,
-                          720]):
+                          720],deg=7):
     # More flexible line fitting routines; currently for Ca II H as observed
     # in pid_1_84, but flexible for application to other lines.  Currently also
     # only includes functinoality for single Gaussian and double Gaussian fits;
@@ -984,7 +984,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
              
             cont_int_array = bkgd_subtract_flaretime[j,inds,kernind]
             cont_int_wave_array = dispersion_range[inds]
-            deg = 7
+            deg = deg
             p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
             nolines = p(dispersion_range)
             selwl = dispersion_range[line_low:line_high]
@@ -1035,7 +1035,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
         kernind = maxinds[i]
         cont_int_array = bkgd_subtract_flaretime[i,inds,kernind]
         cont_int_wave_array = dispersion_range[inds]
-        deg = 7
+        deg =deg
         p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
         nolines = p(dispersion_range)
         selwl = dispersion_range[line_low:line_high]
@@ -1078,7 +1078,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   lamb0 = 396.847,c=2.99e5,
                   note='',lim=0.3e6,
                   yhigh=1.5e6,inds=[410,460,510,520,590,600,610,620,630,640,650,
-                                    660,670,680,690,700,720]):
+                                    660,670,680,690,700,720],deg=7):
     
     # plotting of the output of "fittingroutines"; can expand to beyond first
     # few image frames.  Tested 1 Dec 2023 for pid_1_84 Ca II H but not beyond
@@ -1110,8 +1110,8 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
     selwlvel = (selwl/lamb0-1)*c
     
     def veltrans(x):
-        #return ((((x+lamb0)/lamb0)-1)*c)/mu
-        return ((((x+lamb0)/lamb0)-1)*c)
+        return ((((x+lamb0)/lamb0)-1)*c)/mu
+        #return ((((x+lamb0)/lamb0)-1)*c) #old, no mu angle difference
     
     def wltrans(x):
         return ((((x/c)+1)*lamb0)-lamb0)
@@ -1122,7 +1122,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
         kernind = maxinds[i]
         cont_int_array = bkgd_subtract_flaretime[i,inds,kernind]
         cont_int_wave_array = dispersion_range[inds]
-        deg = 7
+        deg = deg
         p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
         nolines = p(dispersion_range)
         selwl = dispersion_range[line_low:line_high]

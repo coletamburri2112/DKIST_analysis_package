@@ -266,7 +266,7 @@ fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind = \
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
                                   maxindices,pid='pid_1_84', date = '08/09/2022',
                                   line = 'Ca II H',nimg = 7,
-                                  inds=[380,390,400,410,450,480,647,700,820,850,900])
+                                  inds=[380,390,400,410,450,480,647,700,820,850,900],deg=1)
 
 # plot results of Gaussian fitting
 
@@ -277,7 +277,7 @@ DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range,
                             caII_low,caII_high,fits_1g,fits_2g,fits_2gneg,maxindices,
                             mu, pid='pid_1_84', date = '08092022',line = 'Ca II H',
                             nimg = 7, nrow=2,ncol=4,lamb0=wl,note=note,yhigh=7.5e6,
-                            inds=[380,390,400,410,450,480,647,700,820,850,900])
+                            inds=[380,390,400,410,450,480,647,700,820,850,900],deg=1)
     
 
 
