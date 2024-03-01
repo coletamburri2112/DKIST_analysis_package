@@ -309,7 +309,7 @@ def fourstepprocess(path,folder1,dir_list2):
         # image_data_arr_arr_raster1, image_data_arr_arr_raster2,\
         # image-data_arr-arr_raster3, image_data_arr_arr_raster3
         
-def multistepprocess(path,folder1,dir_list2,div=10,startstep=0):
+def multistepprocess(path,folder,dir_list,div=10,startstep=0):
     
     # Multi-step raster procesing of DKIST data; bare bones storage, no
     # separation based on slit step, output includes all slit step positions
@@ -321,11 +321,10 @@ def multistepprocess(path,folder1,dir_list2,div=10,startstep=0):
     image_data_arrs0 = []
     rasterpos = []
     times = []
-    
     # extract relevant information
-    for i in range(0,round(len(dir_list2)/div),1):
+    for i in range(0,round(len(dir_list)/div),1):
         
-        i_file = fits.open(path+folder1+'/'+dir_list2[i+startstep])
+        i_file = fits.open(path+folder+'/'+dir_list[i+startstep])
         times.append(i_file[1].header['DATE-BEG'])
         i_data = i_file[1].data[0]
         image_data_arrs0.append(i_data)
@@ -373,7 +372,7 @@ def spatialaxis(path,folder1,dir_list2,line='Ca II H'):
        
 
 def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
-            limbd = 1.0,end=5):
+            limbd = 1,end=5):
     # Scaling relative to QS values.  For this, require inputs of "nonflare" -
     # this can take the form of off-kernel observations.  In our case, was a disk
     # center observation, hence the allowance for limb darkening correction.  
@@ -407,7 +406,11 @@ def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
     # from each time step in scaled data cube
     for i in range(np.shape(scaled_flare_time)[0]):
         for j in range(np.shape(scaled_flare_time)[2]):
-            bkgd_subtract_flaretime[i,end:,j] = scaled_flare_time[i,end:,j]-nonflare_average[:-end]
+            if end ==0:
+                bkgd_subtract_flaretime[i,:,j] = scaled_flare_time[i,end:,j]-nonflare_average[:]
+            else:
+                bkgd_subtract_flaretime[i,end:,j] = scaled_flare_time[i,end:,j]-nonflare_average[:-end]
+
         
     return scaled_flare_time, bkgd_subtract_flaretime
     
@@ -417,12 +420,21 @@ def pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,muted,indexs
     # plotting routines to compare flare-time with non-flare spectra
     
     fig,ax = plt.subplots(figsize=(10,5))
-    ax.plot(dispersion_range[end:]*10,nonflare_average[:-end],\
-            color=muted[4],label='Non-Flare')
-    ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]],\
-            color=muted[7],label='Flare-Time')
-    ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]]-\
-            nonflare_average[:-end],color=muted[6],label='Flare-Only')
+
+    if end == 0:
+        ax.plot(dispersion_range*10,nonflare_average,\
+                color=muted[4],label='Non-Flare')
+        ax.plot(dispersion_range*10,scaled_flare_time[0,:,indexs[0]],\
+                color=muted[7],label='Flare-Time')
+        ax.plot(dispersion_range*10,scaled_flare_time[0,:,indexs[0]]-\
+                nonflare_average,color=muted[6],label='Flare-Only')
+    else:
+        ax.plot(dispersion_range[end:]*10,nonflare_average[:-end],\
+                color=muted[4],label='Non-Flare')
+        ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]],\
+                color=muted[7],label='Flare-Time')
+        ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]]-\
+                nonflare_average[:-end],color=muted[6],label='Flare-Only')    
     ax.grid()
     #ax.set_ylim([0,5e6])
     ax.legend(loc=0)
@@ -901,7 +913,7 @@ def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
 
 def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
               bkgd_subtract_flaretime,dispersion_range, double_gaussian_fit,
-              times_raster1,caII_low,caII_high,double_gaussian,gaussian,selwl,sel,
+              maxinds,times_raster1,caII_low,caII_high,double_gaussian,gaussian,selwl,sel,
               pid='pid_1_84',parameters = [2e6,396.82,0.01,2e6,396.86,0.015]):
     fig, ax = plt.subplots(3,4,figsize=(30,30))
     
@@ -915,8 +927,8 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
     
     for i in range(np.shape(bkgd_subtract_flaretime)[0]):
         selwl = dispersion_range[caII_low:caII_high]
-        sel = bkgd_subtract_flaretime[i,caII_low:caII_high,1350]-\
-            min(bkgd_subtract_flaretime[i,caII_low:caII_high,1350])
+        sel = bkgd_subtract_flaretime[i,caII_low:caII_high,maxinds[i]]-\
+            min(bkgd_subtract_flaretime[i,caII_low:caII_high,maxinds[i]])
         fit = leastsq(double_gaussian_fit,parameters,(selwl,sel))
         [c1,mu1,sigma1,c2,mu2,sigma2] = fit[0]
         print(fit[0][0])
@@ -930,7 +942,7 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
         ax.flatten()[i].plot(selwl, double_gaussian( selwl,fit[0][0],fit[0][1],fit[0][2],fit[0][3],fit[0][4],fit[0][5]))
         ax.flatten()[i].plot(selwl,gaussian(selwl,fit[0][0],fit[0][1],fit[0][2]),c='g')
         ax.flatten()[i].plot(selwl,gaussian(selwl,fit[0][3],fit[0][4],fit[0][5]),c='g')
-        ax.flatten()[i].axis(ymin=0,ymax=4.3e6)
+        ax.flatten()[i].axis(ymin=0,ymax=7.5e6)
         ax.flatten()[i].set_title(times_raster1[i],fontsize=30)
         ax.flatten()[i].grid()
     ax.flatten()[-1].axis('off')
@@ -997,7 +1009,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                                             p0=params2gauss,
                                             maxfev=5000)
                 
-                if fit2g[0]/fit2g[3] > 1 or np.abs(fit2g[4]-fit2g[1])>0.04:
+                if fit2g[0]/fit2g[3] > 1 or np.abs(fit2g[4]-fit2g[1])>0.03:
                     continue
                 else:
                     # appropriate fit found!
@@ -1063,7 +1075,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   line_low,line_high,fits_1g,fits_2g,fits_2gneg,maxinds,mu,
                   pid='pid_1_84',
                   date = '08092022',line = 'Ca II H',nimg = 7,nrow=2,ncol=4,
-                  lamb0 = 396.85,c=2.99e5,
+                  lamb0 = 396.847,c=2.99e5,
                   note='',lim=0.3e6,
                   yhigh=1.5e6,inds=[410,460,510,520,590,600,610,620,630,640,650,
                                     660,670,680,690,700,720]):
@@ -1098,7 +1110,8 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
     selwlvel = (selwl/lamb0-1)*c
     
     def veltrans(x):
-        return ((((x+lamb0)/lamb0)-1)*c)/mu
+        #return ((((x+lamb0)/lamb0)-1)*c)/mu
+        return ((((x+lamb0)/lamb0)-1)*c)
     
     def wltrans(x):
         return ((((x/c)+1)*lamb0)-lamb0)
