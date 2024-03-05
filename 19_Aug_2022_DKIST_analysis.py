@@ -129,24 +129,41 @@ new_dispersion_range, rat = \
                                  space_and_time_averaged_qs, 
                                  line1,line2,lowinds,highinds)
     
-# but for pid_1_38, observations are not in a quiet sun region, so this function
-# really just takes a single index to compare the atlas and the observations
-# and uses that as the multiplicative factor
-calibration, calibrated_qs,new_dispersion_range2= \
-    DKISTanalysis.get_calibration_singleval(dispersion_range,\
-                                            space_and_time_averaged_qs,\
-                                                wlsel,ilamsel,\
-                                                    limbdark_fact=clv_corrqs,
-                                                    noqs_flag = 1)
+# # but for pid_1_38, observations are not in a quiet sun region, so this function
+# # really just takes a single index to compare the atlas and the observations
+# # and uses that as the multiplicative factor
+# calibration, calibrated_qs,new_dispersion_range2= \
+#     DKISTanalysis.get_calibration_singleval(dispersion_range,\
+#                                             space_and_time_averaged_qs,\
+#                                                 wlsel,ilamsel,\
+#                                                     limbdark_fact=clv_corrqs,
+#                                                     noqs_flag = 1)
 
 #original, based on 15 August 2022 QS
 ## simplify the quiet sun for comparison to flaretime
 #nonflare_average_avg = np.mean(nonflare_average,axis=1)
-
+cont_mult_facts,fit_vals,new_dispersion_range=DKISTanalysis.get_calibration_poly(dispersion_range,
+                                                   space_and_time_averaged_qs,wlsel,ilamsel,DKISTanalysis.find_nearest,
+                                                   line1,line2,lowinds,highinds,limbdark_fact=clv_corrqs,
+                                                   noqs_flag=2)
 # load QS intensity calibration results here!
+calibrated_qs=fit_vals*space_and_time_averaged_qs
 nonflare_average_avg = calibrated_qs
-nonflare_multfact = np.full(len(dispersion_range), calibration[0])
+nonflare_multfact = fit_vals
 
+yconv=DKISTanalysis.psf_adjust(wlsel,ilamsel,0.075,new_dispersion_range,calibrated_qs,clv_corrqs,45,DKISTanalysis.gaussian_psf)
+
+#show comparison of atlas to qs
+fig,ax=plt.subplots();ax.plot(new_dispersion_range,calibrated_qs,label='visp');ax.plot(new_dispersion_range,yconv*clv_corrqs,label='convolved');ax.plot(wlsel,clv_corrqs*ilamsel,label='raw');ax.set_xlim([396.6,397.2]);ax.set_ylim([0,0.6e6]);ax.legend();plt.show()#nonflare_multfact=np.full(len(dispersion_range), calibration[0])
+
+#do another iteration of this step, after peforming the PSF convolution
+cont_mult_facts,fit_vals,new_dispersion_range=DKISTanalysis.get_calibration_poly(new_dispersion_range,
+                                                   space_and_time_averaged_qs,new_dispersion_range,yconv,DKISTanalysis.find_nearest,
+                                                   line1,line2,lowinds,highinds,limbdark_fact=clv_corrqs,
+                                                   noqs_flag=2)
+calibrated_qs=fit_vals*space_and_time_averaged_qs
+nonflare_average_avg = calibrated_qs
+nonflare_multfact = fit_vals
 # intensity calibration, background subtraction                            
 scaled_flare_time, bkgd_subtract_flaretime = \
     DKISTanalysis.scaling(for_scale, nonflare_multfact,clv_corr,
@@ -266,7 +283,7 @@ fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind = \
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
                                   maxindices,pid='pid_1_84', date = '08/09/2022',
                                   line = 'Ca II H',nimg = 7,
-                                  inds=[380,390,400,410,450,480,647,700,820,850,900],deg=1)
+                                  inds=[380,390,400,410,450,480,647,700,820,850,900],deg=7)
 
 # plot results of Gaussian fitting
 
@@ -277,7 +294,7 @@ DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range,
                             caII_low,caII_high,fits_1g,fits_2g,fits_2gneg,maxindices,
                             mu, pid='pid_1_84', date = '08092022',line = 'Ca II H',
                             nimg = 7, nrow=2,ncol=4,lamb0=wl,note=note,yhigh=7.5e6,
-                            inds=[380,390,400,410,450,480,647,700,820,850,900],deg=1)
+                            inds=[380,390,400,410,450,480,647,700,820,850,900],deg=7)
     
 
 
