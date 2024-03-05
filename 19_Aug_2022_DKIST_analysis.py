@@ -161,7 +161,7 @@ cont_mult_facts,fit_vals,new_dispersion_range=DKISTanalysis.get_calibration_poly
                                                    space_and_time_averaged_qs,new_dispersion_range,yconv,DKISTanalysis.find_nearest,
                                                    line1,line2,lowinds,highinds,limbdark_fact=clv_corrqs,
                                                    noqs_flag=2)
-calibrated_qs=fit_vals*space_and_time_averaged_qs
+calibrated_qs=fit_vals*space_and_time_averaged_qs/clv_corrqs
 nonflare_average_avg = calibrated_qs
 nonflare_multfact = fit_vals
 # intensity calibration, background subtraction                            
