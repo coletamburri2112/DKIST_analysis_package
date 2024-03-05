@@ -36,6 +36,8 @@ import astropy.units as u
 import astropy
 from astropy.table import Table
 from scipy.optimize import differential_evolution
+from scipy.interpolate import interp1d
+from scipy.signal import convolve
 
 # from sunpy.net import Fido, attrs as a
 # import pandas as pd
@@ -390,14 +392,24 @@ def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
     # gives us intensity calibrated spectra during flare time
     scaled_flare_time = np.zeros(np.shape(for_scale))
     
-    for i in range(np.shape(for_scale)[0]):
-        for k in range(np.shape(for_scale)[2]):
-            # intensity calibration factor
-            if limbd == 1:
-                scaled_flare_time[i,:,k] = nonflare_multfact*for_scale[i,:,k]/\
-                    limbdarkening
-            elif limbd == 0:
-                scaled_flare_time[i,:,k] = nonflare_multfact*for_scale[i,:,k]              
+    if len(nonflare_multfact)>1:
+        for i in range(np.shape(for_scale)[0]):
+            for k in range(np.shape(for_scale)[2]):
+                # intensity calibration factor
+                if limbd == 1:
+                    scaled_flare_time[i,:,k] = nonflare_multfact[i]*for_scale[i,:,k]/\
+                        limbdarkening
+                elif limbd == 0:
+                    scaled_flare_time[i,:,k] = nonflare_multfact[i]*for_scale[i,:,k]          
+    else:
+        for i in range(np.shape(for_scale)[0]):
+            for k in range(np.shape(for_scale)[2]):
+                # intensity calibration factor
+                if limbd == 1:
+                    scaled_flare_time[i,:,k] = nonflare_multfact*for_scale[i,:,k]/\
+                        limbdarkening
+                elif limbd == 0:
+                    scaled_flare_time[i,:,k] = nonflare_multfact*for_scale[i,:,k]          
             
     
     bkgd_subtract_flaretime = np.zeros(np.shape(for_scale))
@@ -1897,55 +1909,168 @@ def get_calibration_singleval(wave_obs, spec_obs, wave_atlas, spec_atlas,
 
     return calibration, calibrated_qs, new_dispersion_range2
 
+def gaussian_psf(x, fwhm):
+	#x = wavelength [A]
+	# fwhm in [A]
+    sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))  # Calculate sigma from FWHM
+    tr = np.exp(-(x)**2 / (2 * (sigma**2)))
+    tr /= tr.sum()
+    return tr
+#write adjustment for point spread function from atlas
+def psf_adjust(wlsel,ilamsel,fwhm,new_dispersion_range,calibrated_qs,limbdarkqs,ntw,gaussian_psf):
+   
+    
+    func=interp1d(wlsel,ilamsel,kind='linear',fill_value='extrapolate')
+    yatlas = func(new_dispersion_range)
+    dw=new_dispersion_range[1]-new_dispersion_range[0]
+    dw=dw*10
+    tw=(np.arange(ntw)-ntw//2)*dw
+    
+    for i in range(1):
+
+    		# A
+
+    	psf = gaussian_psf(tw, fwhm) # guassian transmission profiles
+    	yconv = convolve(yatlas, psf, mode='same', method='fft')
+        
+    return yconv
+    
 # write calibration function for polynomial-fitting intensity calibration
-def get_calibration_poly(wlsel,ilamsel,new_dispersion_range2,visp_qs_obs,find_nearest,
-                         deg=6,low0=29,high0=29,low1=60,high1=150,
-                         low2=265,high2=290,low3=360,high3=400,low4=450,high4=480,
-                         low5=845,high5=870,low6=945,high6=965):
+def get_calibration_poly(wave_obs, spec_obs, wave_atlas, spec_atlas,find_nearest,
+                         absline1, absline2, indmins, indmaxs,cont_vals = [396.49,396.5,396.628,396.71,396.77,
+                                  396.9,397.075,397.15],limbdark_fact = 1.0, 
+                         wave_idx=None, extra_weight=20., bounds=None,
+                         noqs_flag = 0,noqs_ind = 20):
     
-    sample_flaretime = visp_qs_obs
-    dispersion_range = new_dispersion_range2
+    dispersion_range = np.array(wave_obs)
     
-    contwind0_1 = np.mean(sample_flaretime[low0:high0])
-    contwind0_1_wave = np.mean(dispersion_range[low0:high0])
-    contwind1 = np.mean(sample_flaretime[low1:high1])
-    contwind1_wave = np.mean(dispersion_range[low1:high1])
-    contwind2 = np.mean(sample_flaretime[low2:high2])
-    contwind2_wave = np.mean(dispersion_range[low2:high2])
-    contwind3 = np.mean(sample_flaretime[low3:high3])
-    contwind3_wave = np.mean(dispersion_range[low3:high3])
-    contwind4 = np.mean(sample_flaretime[low4:high4])
-    contwind4_wave = np.mean(dispersion_range[low4:high4])
-    contwind5 = np.mean(sample_flaretime[low5:high5])
-    contwind5_wave = np.mean(dispersion_range[low5:high5])
-    contwind6 = np.mean(sample_flaretime[low6:high6])
-    contwind6_wave = np.mean(dispersion_range[low6:high6])
+    # define locations of reference lines
+    shiftsel_obs1 = np.where((dispersion_range>dispersion_range[indmins[0]]) & 
+                             (dispersion_range<dispersion_range[indmaxs[0]]))
+    shiftsel_obs2 = np.where((dispersion_range>dispersion_range[indmins[1]]) & 
+                             (dispersion_range<dispersion_range[indmaxs[1]]))
+    
+    wavesel_obs1 = np.take(dispersion_range,shiftsel_obs1)[0]
+    fluxsel_obs1 = np.take(spec_obs,shiftsel_obs1)[0]
+    
+    wavesel_obs2 = np.take(dispersion_range,shiftsel_obs2)[0]
+    fluxsel_obs2 = np.take(spec_obs,shiftsel_obs2)[0]
+
+    pixsel_obs1 = np.arange(0, wavesel_obs1.shape[0])
+    pixsel_obs2 = np.arange(0, wavesel_obs2.shape[0])
+    
+    xfit1, yfit1, w0_1 = fitline(pixsel_obs1,fluxsel_obs1)
+    xfit2, yfit2, w0_2 = fitline(pixsel_obs2,fluxsel_obs2)
+    
+    # shift in lines
+    dw1 = w0_1-absline1
+    dw2 = w0_2-absline2
+    
+    dt = absline2 - absline1
+
+    # correction in wavelengths of reference lines
+    corr1 = w0_1 + indmins[0]
+    corr2 = w0_2 + indmins[1]
+    
+    obsdiff = corr2 - corr1
+    
+    #change per nm
+    rat = dt/obsdiff
+    
+    # definition of new dispersion range
+    new_dispersion_range = (np.arange(0,len(dispersion_range))-corr1)*rat + \
+        absline1
+    
+    wave_obs = np.array(new_dispersion_range)
+    if wave_idx is None:
+        wave_idx = np.arange(wave_obs.size)
+    else:
+        wave_idx = np.atleast_1d(wave_idx)
+
+    # Correct for limb-darkening if profile to calibrate on is not from
+    # disc centre (and presumably at same mu as observations)
+    spec_obs = spec_obs/limbdark_fact
+    
+    # #this really does not work for either the intensity scale or plate scale
+    # #Using just the new_dispersion_range above, and the polynomial intensity calibration
+    # # below
+
+    # weights = np.ones_like(wave_obs)
+    # if wave_idx.size is not wave_obs.size:
+    #     weights[wave_idx] = extra_weight
+
+    # def func_to_optimise(x):
+    #     x0 = x[0]
+    #     x1 = x[1]
+    #     ospec = spec_obs * x0
+    #     atlas = np.interp(wave_obs, wave_atlas-x1, spec_atlas)
+    #     chi2 = np.sum( (atlas-ospec)**2 * weights)
+    #     return chi2
+
+    # if bounds is None:
+    #     bounds = [(spec_atlas[0]/spec_obs[0]*0.05, spec_atlas[0]/spec_obs[0]*50.), (-0.3, 0.3)]
+    # optim = differential_evolution(func_to_optimise, bounds)
+    # calibration = optim.x
+    
+    # # ONLY if observations have no quiet sun - choose index that most likely 
+    # # corresponds to quiet sun, e.g. for pid_1_38
+    # if noqs_flag == 1:
+    #     calibration[0] = spec_atlas[noqs_ind]/spec_obs[noqs_ind]
+    #     calibrated_qs = spec_obs * calibration[0]
+    
+    # new_dispersion_range2 = wave_obs + (calibration[1])
+    
+    #sample_flaretime = spec_obs
+    #dispersion_range_fin = new_dispersion_range2
+    
+    # contwind0_1 = np.mean(sample_flaretime[low0:high0])
+    # contwind0_1_wave = np.mean(dispersion_range_fin[low0:high0])
+    # contwind1 = np.mean(sample_flaretime[low1:high1])
+    # contwind1_wave = np.mean(dispersion_range_fin[low1:high1])
+    # contwind2 = np.mean(sample_flaretime[low2:high2])
+    # contwind2_wave = np.mean(dispersion_range_fin[low2:high2])
+    # contwind3 = np.mean(sample_flaretime[low3:high3])
+    # contwind3_wave = np.mean(dispersion_range_fin[low3:high3])
+    # contwind4 = np.mean(sample_flaretime[low4:high4])
+    # contwind4_wave = np.mean(dispersion_range_fin[low4:high4])
+    # contwind5 = np.mean(sample_flaretime[low5:high5])
+    # contwind5_wave = np.mean(dispersion_range_fin[low5:high5])
+    # contwind6 = np.mean(sample_flaretime[low6:high6])
+    # contwind6_wave = np.mean(dispersion_range_fin[low6:high6])
 
 
-    cont_int_array = [contwind0_1,contwind1,contwind2,contwind3,
-                      contwind4,contwind5,contwind6]
-    cont_int_wave_array = [contwind0_1_wave,contwind1_wave,
-                           contwind2_wave,contwind3_wave,
-                           contwind4_wave,contwind5_wave,
-                           contwind6_wave]
+    # cont_int_array = [contwind0_1,contwind1,contwind2,contwind3,
+    #                   contwind4,contwind5,contwind6]
+    # cont_int_wave_array = [contwind0_1_wave,contwind1_wave,
+    #                        contwind2_wave,contwind3_wave,
+    #                        contwind4_wave,contwind5_wave,
+    #                        contwind6_wave]
 
     obs_cont_loc = []
     fts_cont_loc = []
 
-    for i in cont_int_wave_array:
-        obs_cont_loc.append(find_nearest(new_dispersion_range2,i)[1])
-        fts_cont_loc.append(find_nearest(wlsel,i)[1])
-    
-    flux_obs = visp_qs_obs
+    for i in cont_vals:
+        obs_cont_loc.append(find_nearest(new_dispersion_range,i)[1])
+        fts_cont_loc.append(find_nearest(wave_atlas,i)[1])
+
+    flux_obs = spec_obs
 
     cont_flux_obs = np.take(flux_obs,obs_cont_loc)
-    cont_flux_fts = np.take(ilamsel,fts_cont_loc)
+    cont_flux_fts = np.take(spec_atlas,fts_cont_loc)
     
     cont_mult_facts = cont_flux_fts/cont_flux_obs
-    
-    return cont_mult_facts
 
-def plot_calibration(new_dispersion_range, calibrated_qs, wlsel, ilamsel,
+    
+    mult_fit = np.polyfit(new_dispersion_range[obs_cont_loc],cont_mult_facts,2)
+    fit_cont_mult = np.poly1d(mult_fit)
+    fit_vals = fit_cont_mult(new_dispersion_range)
+    if noqs_flag==1:
+        return cont_mult_facts, fit_vals, new_dispersion_range,calibrated_qs
+    else:
+        return cont_mult_facts, fit_vals, new_dispersion_range
+
+
+def plot_calibration(new_dispersion_range, visp_qs_obs, wlsel, ilamsel,
                      pid='pid_1_84',wl=854.207):
     
     """
@@ -1955,7 +2080,7 @@ def plot_calibration(new_dispersion_range, calibrated_qs, wlsel, ilamsel,
     
     fig,ax = plt.subplots()
     
-    lns1 = ax.plot(new_dispersion_range,calibrated_qs,color='red',label='DKIST')
+    lns1 = ax.plot(new_dispersion_range,visp_qs_obs,color='red',label='DKIST')
     ax0 = ax.twinx()
     lns2 = ax0.plot(wlsel,ilamsel,label='Atlas')
     ax.legend()
