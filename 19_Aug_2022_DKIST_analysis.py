@@ -151,7 +151,7 @@ calibrated_qs=fit_vals*space_and_time_averaged_qs
 nonflare_average_avg = calibrated_qs
 nonflare_multfact = fit_vals
 
-yconv=DKISTanalysis.psf_adjust(wlsel,ilamsel,0.075,new_dispersion_range,calibrated_qs,clv_corrqs,45,DKISTanalysis.gaussian_psf)
+yconv=DKISTanalysis.psf_adjust(wlsel,ilamsel,0.05,new_dispersion_range,calibrated_qs,clv_corrqs,45,DKISTanalysis.gaussian_psf)
 
 #show comparison of atlas to qs
 fig,ax=plt.subplots();ax.plot(new_dispersion_range,calibrated_qs,label='visp');ax.plot(new_dispersion_range,yconv*clv_corrqs,label='convolved');ax.plot(wlsel,clv_corrqs*ilamsel,label='raw');ax.set_xlim([396.6,397.2]);ax.set_ylim([0,0.6e6]);ax.legend();plt.show()#nonflare_multfact=np.full(len(dispersion_range), calibration[0])

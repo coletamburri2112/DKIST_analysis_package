@@ -1928,8 +1928,6 @@ def psf_adjust(wlsel,ilamsel,fwhm,new_dispersion_range,calibrated_qs,limbdarkqs,
     
     for i in range(1):
 
-    		# A
-
     	psf = gaussian_psf(tw, fwhm) # guassian transmission profiles
     	yconv = convolve(yatlas, psf, mode='same', method='fft')
         
