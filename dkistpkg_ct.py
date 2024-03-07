@@ -1793,6 +1793,9 @@ def calib_qs_shift(wlsel, ilamsel, dispersion_range, space_and_time_averaged_qs,
     atlas.  Performed after loading reference spectrum and quiet Sun, using 
     two absorption lines (with indices in observation spectrum, and reference
     wavelengths from atlas) in order to determine plate scale.
+    
+    This is outdated as of 7 March 2024.  The whole calibration process is now
+    included in the get_calibration_poly function, applied to 19 August 2024
     """
     
 
@@ -1868,6 +1871,7 @@ def get_calibration_singleval(wave_obs, spec_obs, wave_atlas, spec_atlas,
         respectively
     Author: Carlos Diaz Baso, Gregal Vissers (ISP/SU 2020), minor modifications
         from Cole Tamburri and Rahul Yadav (CU Boulder/NSO 2023)
+    
     """
     wave_obs = np.array(wave_obs)
     if wave_idx is None:
@@ -2062,10 +2066,12 @@ def get_calibration_poly(wave_obs, spec_obs, wave_atlas, spec_atlas,find_nearest
     mult_fit = np.polyfit(new_dispersion_range[obs_cont_loc],cont_mult_facts,2)
     fit_cont_mult = np.poly1d(mult_fit)
     fit_vals = fit_cont_mult(new_dispersion_range)
-    if noqs_flag==1:
-        return cont_mult_facts, fit_vals, new_dispersion_range,calibrated_qs
-    else:
-        return cont_mult_facts, fit_vals, new_dispersion_range
+    
+    # if noqs_flag==1:
+    #     return cont_mult_facts, fit_vals, new_dispersion_range,calibrated_qs
+    # else:
+        
+    return cont_mult_facts, fit_vals, new_dispersion_range
 
 
 def plot_calibration(new_dispersion_range, visp_qs_obs, wlsel, ilamsel,
