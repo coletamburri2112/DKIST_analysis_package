@@ -1059,12 +1059,12 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
             fit1g, fit1gcov = curve_fit(gaussian,selwl,sel,p0=paramsgauss)
             fit2g, fit2gcov = curve_fit(double_gaussian,selwl,sel, 
                                         p0=params2gaussnew,
-                                        maxfev=5000)
+                                        maxfev=10000)
             
             #not iterative
             fit2g_neg, fit2gcov_neg = curve_fit(double_gaussian,selwl,sel,
                                                 p0 = params2gaussneg,
-                                                maxfev=5000)
+                                                maxfev=10000)
             #fit2gneg, fit2gnegcov = curve_fit(double_gaussian,selwl,\ 
                 #sel,p0=params2gaussneg,maxfev=5000)
                 
@@ -1977,7 +1977,7 @@ def get_calibration_poly(wave_obs, spec_obs, wave_atlas, spec_atlas,find_nearest
     obsdiff = corr2 - corr1
     
     #change per nm
-    rat = dt/obsdiff
+    rat = (dt/obsdiff)+0.0000016
     
     # definition of new dispersion range
     new_dispersion_range = (np.arange(0,len(dispersion_range))-corr1)*rat + \
@@ -1993,37 +1993,37 @@ def get_calibration_poly(wave_obs, spec_obs, wave_atlas, spec_atlas,find_nearest
     # disc centre (and presumably at same mu as observations)
     spec_obs = spec_obs/limbdark_fact
     
-    # #this really does not work for either the intensity scale or plate scale
-    # #Using just the new_dispersion_range above, and the polynomial intensity calibration
-    # # below
+    #this really does not work for either the intensity scale or plate scale
+    #Using just the new_dispersion_range above, and the polynomial intensity calibration
+    # below
 
-    # weights = np.ones_like(wave_obs)
-    # if wave_idx.size is not wave_obs.size:
-    #     weights[wave_idx] = extra_weight
+    weights = np.ones_like(wave_obs)
+    if wave_idx.size is not wave_obs.size:
+        weights[wave_idx] = extra_weight
 
-    # def func_to_optimise(x):
-    #     x0 = x[0]
-    #     x1 = x[1]
-    #     ospec = spec_obs * x0
-    #     atlas = np.interp(wave_obs, wave_atlas-x1, spec_atlas)
-    #     chi2 = np.sum( (atlas-ospec)**2 * weights)
-    #     return chi2
+    def func_to_optimise(x):
+        x0 = x[0]
+        x1 = x[1]
+        ospec = spec_obs * x0
+        atlas = np.interp(wave_obs, wave_atlas-x1, spec_atlas)
+        chi2 = np.sum( (atlas-ospec)**2 * weights)
+        return chi2
 
-    # if bounds is None:
-    #     bounds = [(spec_atlas[0]/spec_obs[0]*0.05, spec_atlas[0]/spec_obs[0]*50.), (-0.3, 0.3)]
-    # optim = differential_evolution(func_to_optimise, bounds)
-    # calibration = optim.x
+    if bounds is None:
+        bounds = [(spec_atlas[0]/spec_obs[0]*0.05, spec_atlas[0]/spec_obs[0]*50.), (-0.3, 0.3)]
+    optim = differential_evolution(func_to_optimise, bounds)
+    calibration = optim.x
     
-    # # ONLY if observations have no quiet sun - choose index that most likely 
-    # # corresponds to quiet sun, e.g. for pid_1_38
-    # if noqs_flag == 1:
-    #     calibration[0] = spec_atlas[noqs_ind]/spec_obs[noqs_ind]
-    #     calibrated_qs = spec_obs * calibration[0]
+    # ONLY if observations have no quiet sun - choose index that most likely 
+    # corresponds to quiet sun, e.g. for pid_1_38
+    if noqs_flag == 1:
+        calibration[0] = spec_atlas[noqs_ind]/spec_obs[noqs_ind]
+        calibrated_qs = spec_obs * calibration[0]
     
-    # new_dispersion_range2 = wave_obs + (calibration[1])
+    new_dispersion_range2 = wave_obs + (calibration[1])
     
-    #sample_flaretime = spec_obs
-    #dispersion_range_fin = new_dispersion_range2
+    sample_flaretime = spec_obs
+    dispersion_range_fin = new_dispersion_range2
     
     # contwind0_1 = np.mean(sample_flaretime[low0:high0])
     # contwind0_1_wave = np.mean(dispersion_range_fin[low0:high0])
@@ -2071,7 +2071,7 @@ def get_calibration_poly(wave_obs, spec_obs, wave_atlas, spec_atlas,find_nearest
     #     return cont_mult_facts, fit_vals, new_dispersion_range,calibrated_qs
     # else:
         
-    return cont_mult_facts, fit_vals, new_dispersion_range
+    return cont_mult_facts, fit_vals, new_dispersion_range, dispersion_range_fin, rat
 
 
 def plot_calibration(new_dispersion_range, visp_qs_obs, wlsel, ilamsel,
