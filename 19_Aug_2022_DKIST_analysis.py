@@ -127,7 +127,7 @@ highinds = [450,690]
 
 # define the multiplication factor (polynomial), new dispersion range, fit values
 # to scale the quiet sun to FTS atlas
-cont_mult_facts,fit_vals,new_dispersion_range=\
+cont_mult_facts,fit_vals,new_dispersion_range,dispersion_range_fin,rat=\
     DKISTanalysis.get_calibration_poly(dispersion_range,
                                        space_and_time_averaged_qs,wlsel,ilamsel,
                                        DKISTanalysis.find_nearest,line1,line2,
@@ -152,15 +152,15 @@ yconv=DKISTanalysis.psf_adjust(wlsel,ilamsel,fwhm,new_dispersion_range,
 
 #show comparison of atlas to qs
 fig,ax=plt.subplots()
-ax.plot(new_dispersion_range,calibrated_qs,label='visp')
-ax.plot(new_dispersion_range,yconv*clv_corrqs,label='convolved')
+ax.plot(dispersion_range_fin,calibrated_qs,label='visp')
+ax.plot(dispersion_range_fin,yconv*clv_corrqs,label='convolved')
 ax.plot(wlsel,clv_corrqs*ilamsel,label='raw')
 ax.set_xlim([396.6,397.2]);ax.set_ylim([0,0.6e6])
 ax.legend();plt.show()
 
 #do another iteration of the calibration step after peforming the PSF conv.
 cont_mult_facts,fit_vals,\
-    new_dispersion_range=\
+    new_dispersion_range,dispersion_range_fin,rat=\
         DKISTanalysis.get_calibration_poly(dispersion_range,
                                            space_and_time_averaged_qs,
                                            new_dispersion_range,yconv,
@@ -192,7 +192,7 @@ maxindices = DKISTanalysis.maxintind(dispersion_range,bkgd_subtract_flaretime,
                                      spacelow,spacehigh)
 
 # plot intensity calibrated, background-subtracted spectra
-DKISTanalysis.pltsubtract(dispersion_range,nonflare_average_avg,
+DKISTanalysis.pltsubtract(dispersion_range_fin,nonflare_average_avg,
                           scaled_flare_time,muted,maxindices,end=end)
 
 # variation in intensity value corresponding to wavelengths; PTE; to test
@@ -254,7 +254,7 @@ ew_CaII_all_fs, ew_hep_all_fs, eqw_CaII_all_fs,\
                                        caII_high,hep_low,hep_high,
                                        scaled_flare_time,
                                        bkgd_subtract_flaretime, 
-                                       dispersion_range)
+                                       dispersion_range_fin)
         
 # Gaussian fitting
 # automate for all timesteps
@@ -277,7 +277,7 @@ parameters=[2e6,396.82,0.015,6e6,396.86,0.015]
 # fitting of spectral lines, e.g. double-Gaussian (for Ca II H)
 storeamp1,storeamp2,storesig1,storesig2,storemu1,storemu2 = \
     DKISTanalysis.gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,
-                            storesig2,bkgd_subtract_flaretime,dispersion_range,
+                            storesig2,bkgd_subtract_flaretime,dispersion_range_fin,
                             DKISTanalysis.double_gaussian_fit,maxindices,times_raster1,
                             caII_low,caII_high,DKISTanalysis.double_gaussian,
                             DKISTanalysis.gaussian,selwl,sel,
@@ -289,13 +289,13 @@ store_quarter_width = []
 store_half_width = []
 
 store_ten_width, store_quarter_width, store_half_width = \
-    DKISTanalysis.perclevels(bkgd_subtract_flaretime,dispersion_range,caII_low,
+    DKISTanalysis.perclevels(bkgd_subtract_flaretime,dispersion_range_fin,caII_low,
                              caII_high,store_ten_width,store_quarter_width,
                              store_half_width)
 
 # output fit parameters
 fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind = \
-    DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,dispersion_range,
+    DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,dispersion_range_fin,
                                   times_raster1, caII_low, caII_high,
                                   DKISTanalysis.double_gaussian, 
                                   DKISTanalysis.gaussian, 
@@ -312,7 +312,7 @@ fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind = \
 note = ', adjust with mu angle'
 
 #plot results of fitting
-DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range,
+DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range_fin,
                             DKISTanalysis.double_gaussian,
                             DKISTanalysis.gaussian,times_raster1,muted,
                             caII_low,caII_high,fits_1g,fits_2g,fits_2gneg,maxindices,
