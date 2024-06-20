@@ -455,7 +455,7 @@ def pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,muted,indexs
     ax.set_ylabel(r'Intensity [$W/cm^2/sr/\mathring A$]',fontsize=15)
     plt.show()
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+\
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+\
                 '/pltprofile.png')
 
     return None
@@ -516,7 +516,7 @@ def pltptes(ptes_flaretime,image_data_arr_arr_raster1,pid='pid_1_84'):
     ax.axvline(300)
     ax1.axvline(300)
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+\
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+\
                 '/pltpptes.png')
 
     return None
@@ -916,7 +916,7 @@ def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     
     plt.show()
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+\
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+\
                 '/linecharacteristics.png')
     
     return None
@@ -959,7 +959,7 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
         ax.flatten()[i].grid()
     ax.flatten()[-1].axis('off')
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+\
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+\
                 '/gaussianfits.png')
     
     #save
@@ -990,6 +990,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     
     l=0
     j=0
+    stopind=0
     # first iteration. Use this as guide for the fit parameters to follow
     for j in range(nimg):
         kernind = maxinds[j]
@@ -1022,7 +1023,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                                             p0=params2gauss,
                                             maxfev=5000)
                 
-                if fit2g[0]/fit2g[3] > 1 or np.abs(fit2g[4]-fit2g[1])>0.03:
+                if fit2g[0]/fit2g[3] > 1 or np.abs(fit2g[4]-fit2g[1])>0.04:
                     continue
                 else:
                     # appropriate fit found!
@@ -1090,9 +1091,9 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
             continue
         
         #fits_2gneg.append([fit2gneg,fit2gnegcov])
-            
+        print(stopind)
     return fits_1g, fits_2g, fits_2gneg, params2gaussnew,stopind,storeamp1,\
-        storemu1,storesig1,storeamp2,storemu2,storesig2
+        storemu1,storesig1,storeamp2,storemu2,storesig2,selwl,sel
     
 
 def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
@@ -1113,7 +1114,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
     # question; default is for pid_1_84
     
     # define path
-    path = '/Users/coletamburri/Desktop/DKIST_analysis_package/'+\
+    path = '/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+\
                 pid+'/'
     if os.path.isdir(path) == False:
         os.mkdir(path)
@@ -1178,7 +1179,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
             
             #plt.subplots_adjust(wspace=0.4,hspace=1.0)
             plt.tight_layout(pad = 4)
-            fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+\
+            fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+\
                         pid+'/fits'+date+note+'_endatstep_'+str(i-1)+'.png')
             fig, ax = plt.subplots(nrow,ncol,figsize=(30,15))
             fig.suptitle(line+' evolution w/ fitting, '+date+note,fontsize=20)
@@ -1223,7 +1224,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
     plt.tight_layout(pad = 4)
     plt.show()
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+\
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+\
                 pid+'/fits'+date+note+'_endatstep_'+str(i)+'.png')
     
     return None
@@ -1370,7 +1371,7 @@ def pltraster(caiiavgs,raster_range,spatial_range2,pid='pid_1_84'):
     ax.set_aspect('equal')
     
     plt.show()
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+
                 '/initslit.png')
     
     return None
@@ -1455,7 +1456,7 @@ def plt_precoalign(vbi_X, vbi_Y, hdul1_vbi, visp_X, visp_Y, vispimg,matplotlib,
     matplotlib.use('Qt5Agg')
     aa = plt.ginput(6,timeout = 120)
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+
                 'pre_coalign.png')
     
     return aa
@@ -1534,7 +1535,7 @@ def vbi_visp_transformation(aa, visp_X,visp_Y,nslit,nwave,vbi_X,vbi_Y,dat0_vbi,
     
     plt.show()
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+
                 'postcalib.png')
     
     # plot overlay
@@ -1556,7 +1557,7 @@ def vbi_visp_transformation(aa, visp_X,visp_Y,nslit,nwave,vbi_X,vbi_Y,dat0_vbi,
     
     plt.show()
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+
                 'postcalib_overlay.png')
     
     
@@ -1734,7 +1735,7 @@ def plt_final_coalign(vbi_X_new, vbi_Y_new, dat0_vbi2,
 
     plt.show()
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+'finalcoalign.png')
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+'finalcoalign.png')
     
     return None
 
@@ -2117,7 +2118,7 @@ def plot_calibration(new_dispersion_range, visp_qs_obs, wlsel, ilamsel,
     ax0.set_ylim([min(ilamsel)-.15e6,max(ilamsel)+.15e6])
     ax.set_ylim([min(ilamsel)-.15e6,max(ilamsel)+.15e6])
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_analysis_package/'+pid+\
+    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+\
                 '/pltprofile.png')
     
     return None
