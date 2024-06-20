@@ -969,7 +969,8 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
 def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                     times_raster1, line_low, line_high,
                     double_gaussian, gaussian, selwl,sel,paramsgauss,
-                    params2gauss,params2gaussneg,maxinds,pid='pid_1_84',
+                    params2gauss,params2gaussneg,maxinds,storeamp1,storemu1,
+                    storesig1,storeamp2,storemu2,storesig2,pid='pid_1_84',
                     date = '08/09/2022',line = 'Ca II H',nimg = 7,
                     inds=[410,460,510,520,590,600,610,620,630,640,650,660,670,680,690,700,
                           720],deg=7):
@@ -1041,6 +1042,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     params2gaussnew = params2gauss
     paramsgauss = paramsgauss # should be fine based on initial gauss, with 1g
     
+    
     # print(params2gauss)
     for i in range(nimg):
         
@@ -1072,6 +1074,15 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
             fits_2g.append([fit2g,fit2gcov])
             fits_2gneg.append([fit2g_neg,fit2gcov_neg])
             
+            params2gauss = fit2g
+            storeamp1.append(params2gauss[0])
+            storemu1.append(params2gauss[1])
+            storesig1.append(params2gauss[2])
+            storeamp2.append(params2gauss[3])
+            storemu2.append(params2gauss[4])
+            storesig2.append(params2gauss[5])
+            
+            
         except RuntimeError:
             fits_1g.append(['NaN','NaN'])
             fits_2g.append(['NaN','NaN'])
@@ -1080,7 +1091,9 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
         
         #fits_2gneg.append([fit2gneg,fit2gnegcov])
             
-    return fits_1g, fits_2g, fits_2gneg, params2gaussnew,stopind
+    return fits_1g, fits_2g, fits_2gneg, params2gaussnew,stopind,storeamp1,\
+        storemu1,storesig1,storeamp2,storemu2,storesig2
+    
 
 def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   gaussian,times,muted,
@@ -1184,28 +1197,28 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                                             # fit2gneg[5])
             
 
-            ax.flatten()[l].plot(selwlshift,sel,label='data')
+            ax.flatten()[l].plot(selwlshift,sel/1e6,label='data')
             #ax.flatten()[i].plot(selwlshift,gaussfity,label='G1')
-            ax.flatten()[l].plot(selwlshift,gauss2fity,label='G2',
+            ax.flatten()[l].plot(selwlshift,gauss2fity/1e6,label='G2',
                                  color=muted[2])
-            ax.flatten()[l].plot(selwlshift,comp1fity,label='G2,C1',
+            ax.flatten()[l].plot(selwlshift,comp1fity/1e6,label='G2,C1',
                                  color=muted[4])
-            ax.flatten()[l].plot(selwlshift,comp2fity,label='G2,C2',
+            ax.flatten()[l].plot(selwlshift,comp2fity/1e6,label='G2,C2',
                                  color=muted[6])
             #ax.flatten()[i].plot(selwl,gauss2negfity,label='Gauss2neg')
             #ax.flatten()[i].legend()
-            ax.flatten()[l].axis(ymin=0,ymax=maxprofile+lim)
+            ax.flatten()[l].axis(ymin=0,ymax=(maxprofile+lim)/1e6)
             ax.flatten()[l].axvline(0,linestyle='dotted')
             secaxx = ax.flatten()[l].secondary_xaxis('top', 
                                                      functions=(veltrans,wltrans))
             ax.flatten()[l].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))  
-            ax.flatten()[l].set_title(times[i])
-            ax.flatten()[l].set_ylim([0,yhigh])
+            ax.flatten()[l].set_title(times[i][-12:-4]+' UT')
+            ax.flatten()[l].set_ylim([0,yhigh/1e6])
             
     secaxx = ax.flatten()[0].secondary_xaxis('top', functions=(veltrans,wltrans))
     secaxx.set_xlabel(r'Velocity $[km\; s^{-1}]$')
     ax.flatten()[0].set_xlabel(r' $\lambda$ - $\lambda_0$ [nm]')
-    ax.flatten()[0].set_ylabel(r'Intensity (- $I_{min}$) $[W\; cm^{-2} sr^{-1} \AA^{-1}]$')
+    ax.flatten()[0].set_ylabel(r'Intensity (- $I_{min}$) $[10^6\; W\; cm^{-2} sr^{-1} \AA^{-1}]$')
 
     plt.tight_layout(pad = 4)
     plt.show()
@@ -1911,6 +1924,7 @@ def get_calibration_singleval(wave_obs, spec_obs, wave_atlas, spec_atlas,
     
 
 
+
     return calibration, calibrated_qs, new_dispersion_range2
 
 def gaussian_psf(x, fwhm):
@@ -2142,6 +2156,23 @@ def comp_fit_results_gauss2(fits_2g,times):
     
     fig,ax = plt.subplots()
     
+def conv_to_vel(mu1,mu2,mu,lamb0 = 396.847,c=2.99e5):
+    vel1 = []
+    vel2 = []
+    
+    shift1 = []
+    shift2 = []
+    
+    for i in range(len(mu1)):
+        shift1.append(mu1[i]-lamb0)
+        shift2.append(mu2[i]-lamb0)
+        
+    for i in range(len(mu1)):
+        
+        vel1.append(((((shift1[i]+lamb0)/lamb0)-1)*c)/mu)
+        vel2.append(((((shift2[i]+lamb0)/lamb0)-1)*c)/mu)
+        
+    return vel1, vel2
         
 
 

@@ -191,6 +191,23 @@ maxindices = DKISTanalysis.maxintind(dispersion_range,bkgd_subtract_flaretime,
                                      caII_low_foravg,caII_high_foravg,
                                      spacelow,spacehigh)
 
+### remove if desire tracking of central position ###
+#testing with just the initial brightest point in the ribbon
+# firstmaxonly = []
+# for i in range(len(maxindices)):
+#     firstmaxonly.append(maxindices[0])
+# maxindices = firstmaxonly
+####
+
+### remove if desire tracking of central position ###
+#testing with edge of flare ribbon
+edgeind = []
+for i in range(len(maxindices)):
+    edgeind.append(maxindices[i]+40)
+maxindices = edgeind
+####
+
+
 # plot intensity calibrated, background-subtracted spectra
 DKISTanalysis.pltsubtract(dispersion_range_fin,nonflare_average_avg,
                           scaled_flare_time,muted,maxindices,end=end)
@@ -293,8 +310,16 @@ store_ten_width, store_quarter_width, store_half_width = \
                              caII_high,store_ten_width,store_quarter_width,
                              store_half_width)
 
+storeamp1_2 = []
+storemu1_2 = []
+storesig1_2 = []
+storeamp2_2 = []
+storemu2_2 = []
+storesig2_2 = []
+
 # output fit parameters
-fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind = \
+fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind,storeamp1_2,\
+    storemu1_2,storesig1_2,storeamp2_2,storemu2_2,storesig2_2 = \
     DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,dispersion_range_fin,
                                   times_raster1, caII_low, caII_high,
                                   DKISTanalysis.double_gaussian, 
@@ -302,10 +327,13 @@ fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind = \
                                   selwl,sel,[4e6,396.85,0.02],
                                   parameters,
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
-                                  maxindices,pid='pid_1_84', date = '08/09/2022',
-                                  line = 'Ca II H',nimg = 7,
+                                  maxindices,storeamp1_2,storemu1_2,
+                                  storesig1_2,storeamp2_2,storemu2_2,
+                                  storesig2_2,pid='pid_1_84', date = '08/09/2022',
+                                  line = 'Ca II H',nimg = 8,
                                   inds=[380,390,400,410,450,480,647,700,820,850,900],deg=7)
 
+vel1,vel2 = DKISTanalysis.conv_to_vel(storemu1_2,storemu2_2,mu)
 # plot results of Gaussian fitting
 
 # note for this particular go-around
