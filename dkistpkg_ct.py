@@ -38,6 +38,9 @@ from astropy.table import Table
 from scipy.optimize import differential_evolution
 from scipy.interpolate import interp1d
 from scipy.signal import convolve
+import matplotlib.pylab as pl 
+from datetime import datetime
+
 
 # from sunpy.net import Fido, attrs as a
 # import pandas as pd
@@ -257,6 +260,7 @@ def fourstepprocess(path,folder1,dir_list2):
     times_raster2 = []
     times_raster3 = []
     times_raster4 = []
+    times = []
 
     image_data_arrs = []
     
@@ -271,6 +275,11 @@ def fourstepprocess(path,folder1,dir_list2):
         times_raster2.append(i_file_raster2[1].header['DATE-BEG'])
         times_raster3.append(i_file_raster3[1].header['DATE-BEG'])
         times_raster4.append(i_file_raster4[1].header['DATE-BEG'])
+        
+        times.append(i_file_raster1[1].header['DATE-BEG'])
+        times.append(i_file_raster2[1].header['DATE-BEG'])
+        times.append(i_file_raster3[1].header['DATE-BEG'])
+        times.append(i_file_raster4[1].header['DATE-BEG'])
         
         i_data_raster1 = i_file_raster1[1].data[0]
         i_data_raster2 = i_file_raster2[1].data[0]
@@ -289,10 +298,10 @@ def fourstepprocess(path,folder1,dir_list2):
         rasterpos4.append(i_file_raster4[1].header['CRPIX3'])
         
         #array including all raster positions
-        image_data_arrs.append(image_data_arrs_raster1)
-        image_data_arrs.append(image_data_arrs_raster2)
-        image_data_arrs.append(image_data_arrs_raster3)
-        image_data_arrs.append(image_data_arrs_raster4)
+        image_data_arrs.append(i_data_raster1)
+        image_data_arrs.append(i_data_raster2)
+        image_data_arrs.append(i_data_raster3)
+        image_data_arrs.append(i_data_raster4)
         
     # array version of images corresponding to each slit position
     image_data_arr_arr_raster1 = np.array(image_data_arrs_raster1)
@@ -307,7 +316,7 @@ def fourstepprocess(path,folder1,dir_list2):
     for_scale = image_data_arr_arr_raster1[:,:,:]
     
     # uncomment second and third lines to return individual raster arrays
-    return image_data_arr_arr, i_file_raster1, for_scale, times_raster1#,\
+    return image_data_arr_arr, i_file_raster1, for_scale, times_raster1,times#,\
         # image_data_arr_arr_raster1, image_data_arr_arr_raster2,\
         # image-data_arr-arr_raster3, image_data_arr_arr_raster3
         
@@ -716,7 +725,7 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
                              bkgd_subtract_flaretime,dispersion_range,maxinds,
                              low0=29,high0=29,low1=60,high1=150,low2=265,
                              high2=290,low3=360,high3=400,low4=450,high4=480,
-                             low5=845,high5=870,low6=945,high6=965,end=5,deg=7,
+                             low5=845,high5=870,low6=945,high6=965,end=0,deg=7,
                              alt=0,
                              altinds = [380, 390, 400, 410, 450, 480, 647, 700,\
                                         820, 850, 900]):
@@ -854,8 +863,9 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
 
 # NOTE: Add plotting routine for widths?
 def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
-                             int_line_all_fs,maxindices,times,muted,pid='pid_1_84',
-                             nslitpos=4,raster=0,nframes=7,line='Ca II H'):
+                             int_line_all_fs,ew_line2_all_fs,eqw_line2_all_fs,width_line2_all_fs,
+                             int_line2_all_fs,maxindices,times,muted,pid='pid_1_84',
+                             nslitpos=4,raster=0,nframes=11,line='Ca II H',line2='H-Epsilon',end=16):
     
     # defined quantites are all for pid_1_84
     # raster is start position to begin tracking
@@ -868,56 +878,139 @@ def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     kernindwidths = []
     kernindflxs = []
     
+    # arrays to populate with specific kernel
+    kernindews2 = []
+    kernindeqws2 = []
+    kernindwidths2 = []
+    kernindflxs2 = []
+    
     timeshhmmss = []
+    
+    timesdt = []
+    
+    for i in times:
+        timesdt.append(datetime.strptime(i, '%Y-%m-%dT%H:%M:%S.%f'))
+        
+    timesdthr = []
+    
+    for i in timesdt:
+        timesdthr.append(datetime.strftime(i, 
+                                     "%H:%M:%S"))
     
     # times in correct format for plotting
     for i in range(len(times)):
         timeshhmmss.append(times[i][-12:-4])
 
-    
+   
     # append correct value depending on kernel location defined by input array
-    for i in range(nframes):
-        kernindews.append(ew_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
-        kernindeqws.append(eqw_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
-        kernindwidths.append(width_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
-        kernindflxs.append(int_line_all_fs[raster+nslitpos*i,maxindices[raster+nslitpos*i]])
+    for i in range(len(times)):
+        kernindews.append(ew_line_all_fs[i,maxindices[i]])
+        kernindeqws.append(eqw_line_all_fs[i,maxindices[i]])
+        kernindwidths.append(width_line_all_fs[i,maxindices[i]])
+        kernindflxs.append(int_line_all_fs[i,maxindices[i]])
+        
+        kernindews2.append(ew_line2_all_fs[i,maxindices[i]])
+        kernindeqws2.append(eqw_line2_all_fs[i,maxindices[i]])
+        kernindwidths2.append(width_line2_all_fs[i,maxindices[i]])
+        kernindflxs2.append(int_line2_all_fs[i,maxindices[i]])
     
     
+    print('length = '+str(len(kernindews)))
     # plotting routines
-    fig,[[ax0,ax1],[ax2,ax3]]=plt.subplots(2,2,figsize=(10,10))
+    #print(len(timeshhmmss))
+    fig,((ax1,ax2),(ax3,ax4),(ax5,ax6),(ax7,ax8))=plt.subplots(4,2,figsize=(10,5))
     fig.suptitle(line+' Line Characteristics, '+pid+'',fontsize=25)
-    ax0.plot(timeshhmmss[raster::nslitpos],kernindews,'-o',color=muted[0])
-    ax1.plot(timeshhmmss[raster::nslitpos],kernindeqws,'-o',color=muted[1])
-    ax2.plot(timeshhmmss[raster::nslitpos],kernindwidths,'-o',color=muted[2])
-    ax3.plot(timeshhmmss[raster::nslitpos],kernindflxs,'-o',color=muted[3])
+    ax1.plot(timesdt[0:-end:nslitpos],kernindews[:-end:nslitpos],'-o',color=muted[0])
+    ax2.plot(timesdt[1:-end:nslitpos],kernindews[1:-end:nslitpos],'-o',color=muted[1])
+    ax3.plot(timesdt[2:-end:nslitpos],kernindews[2:-end:nslitpos],'-o',color=muted[2])
+    ax4.plot(timesdt[3:-end:nslitpos],kernindews[3:-end:nslitpos],'-o',color=muted[3])
     
-    ax0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm]',fontsize=15)
-    ax1.set_ylabel(r'$\Delta\lambda_{eq}$ [nm]',fontsize=15)
-    ax2.set_ylabel(r'$\Delta\lambda$ [nm]',fontsize=15)
-    ax3.set_ylabel(r'Radiance [$W/cm^2/sr$]',fontsize=15)
+    ax5.plot(timesdt[0:-end:nslitpos],kernindeqws[:-end:nslitpos],'-o',color=muted[0])
+    ax6.plot(timesdt[1:-end:nslitpos],kernindeqws[1:-end:nslitpos],'-o',color=muted[1])
+    ax7.plot(timesdt[2:-end:nslitpos],kernindeqws[2:-end:nslitpos],'-o',color=muted[2])
+    ax8.plot(timesdt[3:-end:nslitpos],kernindeqws[3:-end:nslitpos],'-o',color=muted[3])
+
+    ax1_0 = ax1.twinx()
+    ax2_0 = ax2.twinx()
+    ax3_0 = ax3.twinx()
+    ax4_0 = ax4.twinx()
+    ax5_0 = ax5.twinx()
+    ax6_0 = ax6.twinx()
+    ax7_0 = ax7.twinx()
+    ax8_0 = ax8.twinx()
+    
+    ax1_0.plot(timesdt[0:-end:nslitpos],kernindews2[:-end:nslitpos],'-o',color=muted[4])
+    ax2_0.plot(timesdt[1:-end:nslitpos],kernindews2[1:-end:nslitpos],'-o',color=muted[5])
+    ax3_0.plot(timesdt[2:-end:nslitpos],kernindews2[2:-end:nslitpos],'-o',color=muted[6])
+    ax4_0.plot(timesdt[3:-end:nslitpos],kernindews2[3:-end:nslitpos],'-o',color=muted[7])
+    
+    ax5_0.plot(timesdt[0:-end:nslitpos],kernindeqws2[:-end:nslitpos],'-o',color=muted[4])
+    ax6_0.plot(timesdt[1:-end:nslitpos],kernindeqws2[1:-end:nslitpos],'-o',color=muted[5])
+    ax7_0.plot(timesdt[2:-end:nslitpos],kernindeqws2[2:-end:nslitpos],'-o',color=muted[6])
+    ax8_0.plot(timesdt[3:-end:nslitpos],kernindeqws2[3:-end:nslitpos],'-o',color=muted[7])
+        
     
     
-    ax0.set_title('Effective Widths',fontsize=20)
-    ax1.set_title('Equivalent Widths',fontsize=20)
-    ax2.set_title('Line Widths',fontsize=20)
-    ax3.set_title('Line flux',fontsize=20)
+    ax1.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=12)
+    ax1_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=12)
+    ax2.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=12)
+    ax2_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=12)
+    ax3.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=12)
+    ax3_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=12)
+    ax4.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=12)
+    ax4_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=12)
     
-    ax0.grid()
+    ax5.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=12)
+    ax5_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=12)
+    ax6.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=12)
+    ax6_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=12)
+    ax7.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=12)
+    ax7_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=12)
+    ax8.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=12)
+    ax8_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=12)
+    
+    
+    
+    
+    
     ax1.grid()
     ax2.grid()
     ax3.grid()
+    ax4.grid()
+    ax5.grid()
+    ax6.grid()
+    ax7.grid()
+    ax8.grid()
+
     
-    ax0.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
-    ax1.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
-    ax2.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
-    ax3.set_xticklabels(timeshhmmss[raster::nslitpos], rotation=45)
+
+
     
-    fig.tight_layout(pad=5.0)
+    ax1.get_xaxis().set_visible(False)
+    ax1_0.get_xaxis().set_visible(False)
+
+    ax2.get_xaxis().set_visible(False)
+    ax2_0.get_xaxis().set_visible(False)
+    
+    ax3.get_xaxis().set_visible(False)
+    ax3_0.get_xaxis().set_visible(False)
+    
+    ax4.get_xaxis().set_visible(False)
+    ax4_0.get_xaxis().set_visible(False)
+    
+    ax5.get_xaxis().set_visible(False)
+    ax5_0.get_xaxis().set_visible(False)
+    
+    ax6.get_xaxis().set_visible(False)
+    ax6_0.get_xaxis().set_visible(False)
+    
+
+    fig.tight_layout(h_pad=0,w_pad=4)
     
     plt.show()
     
-    fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+\
-                '/linecharacteristics.png')
+    #fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+\
+    #            '/linecharacteristics.png')
     
     return None
     
@@ -2174,6 +2267,95 @@ def conv_to_vel(mu1,mu2,mu,lamb0 = 396.847,c=2.99e5):
         vel2.append(((((shift2[i]+lamb0)/lamb0)-1)*c)/mu)
         
     return vel1, vel2
+
+def plt_allrasterprofile(maxindices,scaled_flare_time,dispersion_range,end=5):
+    
+    fig,ax = plt.subplots(2,2,dpi=200)
+
+    colors = pl.cm.turbo(np.linspace(0,1,44))
+    cmap = pl.cm.get_cmap('turbo', 44)
+    
+    for i in range(0,44,4):
+        ax[0,0].plot(dispersion_range[end:],scaled_flare_time[i,end:,maxindices[i]]/1e6,color=colors[i],label='Flare-Time')
+        ax[0,1].plot(dispersion_range[end:],scaled_flare_time[i+1,end:,maxindices[i+1]]/1e6,color=colors[i+1],label='Flare-Time')
+        ax[1,0].plot(dispersion_range[end:],scaled_flare_time[i+2,end:,maxindices[i+2]]/1e6,color=colors[i+2],label='Flare-Time')
+        ax[1,1].plot(dispersion_range[end:],scaled_flare_time[i+3,end:,maxindices[i+3]]/1e6,color=colors[i+3],label='Flare-Time')
+    
+        ax[0,0].grid()
+        ax[0,1].grid()
+        ax[1,0].grid()
+        ax[1,1].grid()
+        
+        ax[0,0].set_ylim([0,7])
+        ax[0,1].set_ylim([0,7])
+        ax[1,0].set_ylim([0,7])
+        ax[1,1].set_ylim([0,7])
+        
+        ax[0,0].set_xlim([396.7,397.1])
+        ax[0,1].set_xlim([396.7,397.1])
+        ax[1,0].set_xlim([396.7,397.1])
+        ax[1,1].set_xlim([396.7,397.1])
+        
+        ax[0,0].set_title('Position 1',fontsize=10)
+        ax[0,1].set_title('Position 2',fontsize=10)
+        ax[1,0].set_title('Position 3',fontsize=10)
+        ax[1,1].set_title('Position 4',fontsize=10)
+    
+        #plt.suptitle(r'DKIST/ViSP Ca II H and H$\epsilon$, 2022 August 19')
+    
+        ax[0,0].set_xlabel(r'Wavelength [nm]',fontsize=7)
+        ax[0,1].set_xlabel(r'Wavelength [nm]',fontsize=7)
+        ax[1,0].set_xlabel(r'Wavelength [nm]',fontsize=7)
+        ax[1,1].set_xlabel(r'Wavelength [nm]',fontsize=7)
+    
+        ax[0,0].set_ylabel(r'Intensity [$10^6\;W\; cm^{-2}\; sr^{-1}\; \mathring A^{-1}$]',fontsize=7)
+        ax[0,1].set_ylabel(r'Intensity [$10^6\;W\; cm^{-2}\; sr^{-1}\; \mathring A^{-1}$]',fontsize=7)
+        ax[1,0].set_ylabel(r'Intensity [$10^6\;W\; cm^{-2}\; sr^{-1}\; \mathring A^{-1}$]',fontsize=7)
+        ax[1,1].set_ylabel(r'Intensity [$10^6\;W\; cm^{-2}\; sr^{-1}\; \mathring A^{-1}$]',fontsize=7)
+        
+        ax[0,0].tick_params(axis='both', which='major', labelsize=7)
+        ax[0,1].tick_params(axis='both', which='major', labelsize=7)
+        ax[1,0].tick_params(axis='both', which='major', labelsize=7)
+        ax[1,1].tick_params(axis='both', which='major', labelsize=7)
+
+    plt.show()
+    
+    fig.tight_layout()
+    
+    fig.savefig('/Users/coletamburri/Desktop/allrasters_separate.png',dpi=400)
+    
+    fig,ax = plt.subplots(figsize=(3,3),dpi=200)
+    
+    cmap = pl.cm.get_cmap('turbo', 44)
+        
+    for i in range(0,44,4):
+        ax.plot(dispersion_range[end:],scaled_flare_time[i,end:,maxindices[i]]/1e6,linewidth=1,color=colors[i],label='Flare-Time')
+        ax.plot(dispersion_range[end:],scaled_flare_time[i+1,end:,maxindices[i+1]]/1e6,linewidth=1,color=colors[i+1],label='Flare-Time')
+        ax.plot(dispersion_range[end:],scaled_flare_time[i+2,end:,maxindices[i+2]]/1e6,linewidth=1,color=colors[i+2],label='Flare-Time')
+        ax.plot(dispersion_range[end:],scaled_flare_time[i+3,end:,maxindices[i+3]]/1e6,linewidth=1,color=colors[i+3],label='Flare-Time')
+    
+        ax.grid()
+    
+        
+        ax.set_ylim([0,7])
+    
+        
+        ax.set_xlim([396.7,397.1])
+
+        #plt.suptitle(r'DKIST/ViSP Ca II H and H$\epsilon$, 2022 August 19')
+    
+        ax.set_xlabel(r'Wavelength [nm]',fontsize=7)
+        ax.set_ylabel(r'Intensity [$10^6\;W\; cm^{-2}\; sr^{-1}\; \mathring A^{-1}$]',fontsize=7)
+        ax.tick_params(axis='both', which='major', labelsize=7)
+    
+    fig.show()
+
+    fig.savefig('/Users/coletamburri/Desktop/allrasters_together.png',dpi=400)
+
+    return None
+
+        
+
         
 
 
