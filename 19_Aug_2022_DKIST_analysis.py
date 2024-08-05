@@ -201,10 +201,10 @@ maxindices = DKISTanalysis.maxintind(dispersion_range,bkgd_subtract_flaretime,
 
 ### remove if desire tracking of central position ###
 #testing with edge of flare ribbon
-edgeind = []
-for i in range(len(maxindices)):
-    edgeind.append(maxindices[i]+40)
-maxindices = edgeind
+# edgeind = []
+# for i in range(len(maxindices)):
+#     edgeind.append(maxindices[i]+40)
+# maxindices = edgeind
 ####
 
 
@@ -319,7 +319,7 @@ storesig2_2 = []
 
 # output fit parameters
 fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind,storeamp1_2,\
-    storemu1_2,storesig1_2,storeamp2_2,storemu2_2,storesig2_2 = \
+    storemu1_2,storesig1_2,storeamp2_2,storemu2_2,storesig2_2,selwl,sel = \
     DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,dispersion_range_fin,
                                   times_raster1, caII_low, caII_high,
                                   DKISTanalysis.double_gaussian, 
@@ -347,7 +347,18 @@ DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range_fin,
                             mu, pid='pid_1_84', date = '08092022',line = 'Ca II H',
                             nimg = 7, nrow=2,ncol=4,lamb0=wl,note=note,yhigh=7.5e6,
                             inds=[380,390,400,410,450,480,647,700,820,850,900],deg=7)
+
+
+#processing of all raster slices
+scaled_flare_time_allrasters, bkgd_subtract_flaretime_allrasters = \
+    DKISTanalysis.scaling(image_data_arr_arr, nonflare_multfact,clv_corr,
+                          nonflare_average_avg,end=end)
     
+maxindices_allrasters = DKISTanalysis.maxintind(dispersion_range,
+                                                bkgd_subtract_flaretime_allrasters,
+                                                caII_low_foravg,caII_high_foravg,
+                                                spacelow,spacehigh)
+   
 
 
 

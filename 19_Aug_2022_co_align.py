@@ -33,7 +33,7 @@ muted = DKISTanalysis.color_muted2()
 pid = 'pid_1_84'
 
 #ViSP
-path = '/Volumes/ViSP_Aug_15_Aug_25_22/pid_1_84/'
+path = '/Volumes/ViSP_External/pid_1_84/'
 folder1 = 'AZVXV'
 
 #VBI
@@ -116,7 +116,7 @@ cutout = a.jsoc.Cutout(bottom_left, top_right=top_right, tracking=True)
 #remember features and order of features in bb; may need to run many times
 #to be sure of best choices with VBI
 query, bb = DKISTanalysis.query_sdo(start_time, "cole.tamburri@colorado.edu", 
-                                    cutout, matplotlib, wavelength = 304,
+                                    cutout, matplotlib, lowerx,upperx,lowery,uppery,wavelength = 304,
                                     timesamp=2,passband='cont')
 
 #load continuum VBI?
