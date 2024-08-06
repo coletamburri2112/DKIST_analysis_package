@@ -430,7 +430,7 @@ def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
             if end ==0:
                 bkgd_subtract_flaretime[i,:,j] = scaled_flare_time[i,end:,j]-nonflare_average[:]
             else:
-                bkgd_subtract_flaretime[i,end:,j] = scaled_flare_time[i,end:,j]-nonflare_average[:-end]
+                bkgd_subtract_flaretime[i,end:,j] = scaled_flare_time[i,end:,j]-nonflare_average[:-end-1]
 
         
     return scaled_flare_time, bkgd_subtract_flaretime
@@ -450,12 +450,12 @@ def pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,muted,indexs
         ax.plot(dispersion_range*10,scaled_flare_time[0,:,indexs[0]]-\
                 nonflare_average,color=muted[6],label='Flare-Only')
     else:
-        ax.plot(dispersion_range[end:]*10,nonflare_average[:-end],\
+        ax.plot(dispersion_range[end:]*10,nonflare_average[:-end-1],\
                 color=muted[4],label='Non-Flare')
         ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]],\
                 color=muted[7],label='Flare-Time')
         ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]]-\
-                nonflare_average[:-end],color=muted[6],label='Flare-Only')    
+                nonflare_average[:-end-1],color=muted[6],label='Flare-Only')    
     ax.grid()
     #ax.set_ylim([0,5e6])
     ax.legend(loc=0)
@@ -748,7 +748,7 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     # intensity-calibrated spectra (see description of effective vs. equivalent
     # with for justification)
     for j in range(np.shape(bkgd_subtract_flaretime)[2]):
-        for i in range(len(scaled_flare_time)-end):
+        for i in range(len(scaled_flare_time)-end-1):
             
             # two methods - averaging continuum windows (pid_1_84) is ind = 0
             if alt == 0:
@@ -918,18 +918,18 @@ def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     print('length = '+str(len(kernindews)))
     # plotting routines
     #print(len(timeshhmmss))
-    fig,((ax1,ax2),(ax3,ax4),(ax5,ax6),(ax7,ax8))=plt.subplots(4,2,figsize=(10,5))
-    fig.suptitle(line+' Line Characteristics, '+pid+'',fontsize=25)
-    ax1.plot(timesdt[0:-end:nslitpos],kernindews[:-end:nslitpos],'-o',color=muted[0])
-    ax2.plot(timesdt[1:-end:nslitpos],kernindews[1:-end:nslitpos],'-o',color=muted[1])
-    ax3.plot(timesdt[2:-end:nslitpos],kernindews[2:-end:nslitpos],'-o',color=muted[2])
-    ax4.plot(timesdt[3:-end:nslitpos],kernindews[3:-end:nslitpos],'-o',color=muted[3])
+    fig,((ax1,ax2),(ax3,ax4),(ax5,ax6),(ax7,ax8))=plt.subplots(4,2,figsize=(10,7))
+    #fig.suptitle(line+' Line Characteristics, '+pid+'',fontsize=25)
+    lns1 = ax1.plot(timesdt[0:-end:nslitpos],kernindews[:-end:nslitpos],'-o',color=muted[0],label='Ca II H')
+    lns2 = ax2.plot(timesdt[1:-end:nslitpos],kernindews[1:-end:nslitpos],'-o',color=muted[1],label='Ca II H')
+    lns3 = ax3.plot(timesdt[2:-end:nslitpos],kernindews[2:-end:nslitpos],'-o',color=muted[2],label='Ca II H')
+    lns4 = ax4.plot(timesdt[3:-end:nslitpos],kernindews[3:-end:nslitpos],'-o',color=muted[3],label='Ca II H')
     
-    ax5.plot(timesdt[0:-end:nslitpos],kernindeqws[:-end:nslitpos],'-o',color=muted[0])
-    ax6.plot(timesdt[1:-end:nslitpos],kernindeqws[1:-end:nslitpos],'-o',color=muted[1])
-    ax7.plot(timesdt[2:-end:nslitpos],kernindeqws[2:-end:nslitpos],'-o',color=muted[2])
-    ax8.plot(timesdt[3:-end:nslitpos],kernindeqws[3:-end:nslitpos],'-o',color=muted[3])
-
+    lns5 = ax5.plot(timesdt[0:-end:nslitpos],kernindeqws[:-end:nslitpos],'-o',color=muted[0],label='Ca II H')
+    lns6 = ax6.plot(timesdt[1:-end:nslitpos],kernindeqws[1:-end:nslitpos],'-o',color=muted[1],label='Ca II H')
+    lns7 = ax7.plot(timesdt[2:-end:nslitpos],kernindeqws[2:-end:nslitpos],'-o',color=muted[2],label='Ca II H')
+    lns8 = ax8.plot(timesdt[3:-end:nslitpos],kernindeqws[3:-end:nslitpos],'-o',color=muted[3],label='Ca II H')
+    
     ax1_0 = ax1.twinx()
     ax2_0 = ax2.twinx()
     ax3_0 = ax3.twinx()
@@ -939,39 +939,45 @@ def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     ax7_0 = ax7.twinx()
     ax8_0 = ax8.twinx()
     
-    ax1_0.plot(timesdt[0:-end:nslitpos],kernindews2[:-end:nslitpos],'-o',color=muted[4])
-    ax2_0.plot(timesdt[1:-end:nslitpos],kernindews2[1:-end:nslitpos],'-o',color=muted[5])
-    ax3_0.plot(timesdt[2:-end:nslitpos],kernindews2[2:-end:nslitpos],'-o',color=muted[6])
-    ax4_0.plot(timesdt[3:-end:nslitpos],kernindews2[3:-end:nslitpos],'-o',color=muted[7])
+    lns1_0 = ax1_0.plot(timesdt[0:-end:nslitpos],kernindews2[:-end:nslitpos],'-o',color=muted[4],label=r'$H\epsilon$')
+    lns2_0 = ax2_0.plot(timesdt[1:-end:nslitpos],kernindews2[1:-end:nslitpos],'-o',color=muted[5],label=r'$H\epsilon$')
+    lns3_0 =ax3_0.plot(timesdt[2:-end:nslitpos],kernindews2[2:-end:nslitpos],'-o',color=muted[6],label=r'$H\epsilon$')
+    lns4_0 =ax4_0.plot(timesdt[3:-end:nslitpos],kernindews2[3:-end:nslitpos],'-o',color=muted[7],label=r'$H\epsilon$')
     
-    ax5_0.plot(timesdt[0:-end:nslitpos],kernindeqws2[:-end:nslitpos],'-o',color=muted[4])
-    ax6_0.plot(timesdt[1:-end:nslitpos],kernindeqws2[1:-end:nslitpos],'-o',color=muted[5])
-    ax7_0.plot(timesdt[2:-end:nslitpos],kernindeqws2[2:-end:nslitpos],'-o',color=muted[6])
-    ax8_0.plot(timesdt[3:-end:nslitpos],kernindeqws2[3:-end:nslitpos],'-o',color=muted[7])
+    lns5_0 =ax5_0.plot(timesdt[0:-end:nslitpos],kernindeqws2[:-end:nslitpos],'-o',color=muted[4],label=r'$H\epsilon$')
+    lns6_0 =ax6_0.plot(timesdt[1:-end:nslitpos],kernindeqws2[1:-end:nslitpos],'-o',color=muted[5],label=r'$H\epsilon$')
+    lns7_0 =ax7_0.plot(timesdt[2:-end:nslitpos],kernindeqws2[2:-end:nslitpos],'-o',color=muted[6],label=r'$H\epsilon$')
+    lns8_0 =ax8_0.plot(timesdt[3:-end:nslitpos],kernindeqws2[3:-end:nslitpos],'-o',color=muted[7],label=r'$H\epsilon$')
         
     
     
-    ax1.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=12)
-    ax1_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=12)
-    ax2.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=12)
-    ax2_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=12)
-    ax3.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=12)
-    ax3_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=12)
-    ax4.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=12)
-    ax4_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=12)
+    ax1.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=10,color=muted[0])
+    ax1_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=10,color=muted[4])
+    ax2.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=10,color=muted[1])
+    ax2_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=10,color=muted[5])
+    ax3.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=10,color=muted[2])
+    ax3_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=10,color=muted[6])
+    ax4.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], Ca II H',fontsize=10,color=muted[3])
+    ax4_0.set_ylabel(r'$\Delta\lambda_{eff}$ [nm], H$\epsilon$',fontsize=10,color=muted[7])
     
-    ax5.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=12)
-    ax5_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=12)
-    ax6.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=12)
-    ax6_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=12)
-    ax7.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=12)
-    ax7_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=12)
-    ax8.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=12)
-    ax8_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=12)
+    ax5.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=10,color=muted[0])
+    ax5_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=10,color=muted[4])
+    ax6.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=10,color=muted[1])
+    ax6_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=10,color=muted[5])
+    ax7.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=10,color=muted[2])
+    ax7_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=10,color=muted[6])
+    ax8.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], Ca II H',fontsize=10,color=muted[3])
+    ax8_0.set_ylabel(r'$\Delta\lambda_{eq}$ [nm], H$\epsilon$',fontsize=10,color=muted[7])
     
-    
-    
-    
+    ax1.set_xticks(timesdt[0:-end:4],[])
+    ax2.set_xticks(timesdt[0:-end:4],[])
+    ax3.set_xticks(timesdt[0:-end:4],[])
+    ax4.set_xticks(timesdt[0:-end:4],[])
+    ax5.set_xticks(timesdt[0:-end:4],[])
+    ax6.set_xticks(timesdt[0:-end:4],[])
+    ax7.set_xticks(timesdt[0:-end:4],timeshhmmss[0:-end:4],rotation=45)
+    ax8.set_xticks(timesdt[0:-end:4],timeshhmmss[0:-end:4],rotation=45)
+
     
     ax1.grid()
     ax2.grid()
@@ -981,28 +987,101 @@ def plt_line_characteristics(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
     ax6.grid()
     ax7.grid()
     ax8.grid()
+    timesdt0 = datetime(2022, 8, 19, 20, 42, 3, 5)
+    
+    ax1.set_xlim([timesdt0,timesdt[-end-1]])
+    ax2.set_xlim([timesdt0,timesdt[-end-1]])
+    ax3.set_xlim([timesdt0,timesdt[-end-1]])
+    ax4.set_xlim([timesdt0,timesdt[-end-1]])
+    ax5.set_xlim([timesdt0,timesdt[-end-1]])
+    ax6.set_xlim([timesdt0,timesdt[-end-1]])
+    ax7.set_xlim([timesdt0,timesdt[-end-1]])
+    ax8.set_xlim([timesdt0,timesdt[-end-1]])
+    
+    ax1_0.set_xlim([timesdt0,timesdt[-end-1]])
+    ax2_0.set_xlim([timesdt0,timesdt[-end-1]])
+    ax3_0.set_xlim([timesdt0,timesdt[-end-1]])
+    ax4_0.set_xlim([timesdt0,timesdt[-end-1]])
+    ax5_0.set_xlim([timesdt0,timesdt[-end-1]])
+    ax6_0.set_xlim([timesdt0,timesdt[-end-1]])
+    ax7_0.set_xlim([timesdt0,timesdt[-end-1]])
+    ax8_0.set_xlim([timesdt0,timesdt[-end-1]])
+    
+    #ax1.set_ylim([])
+    # ax2.set_ylim([timesdt0,timesdt[-end-1]])
+    ax3.set_ylim([.0455,0.050])
+    #ax4.set_ylim([timesdt0,timesdt[-end-1]])
+    ax5.set_ylim([-0.22,-0.07])
+    # ax6.set_ylim([timesdt0,timesdt[-end-1]])
+    # ax7.set_ylim([timesdt0,timesdt[-end-1]])
+    #ax8.set_ylim([timesdt0,timesdt[-end-1]])
+    
+    ax1_0.set_ylim([.006 ,.011])
+    #ax2_0.set_ylim([timesdt0,timesdt[-end-1]])
+    #ax3_0.set_ylim([timesdt0,timesdt[-end-1]])
+    ax4_0.set_ylim([.0085,0.0105])
+    ax5_0.set_ylim([-0.03,-0.004])
+    #ax6_0.set_ylim([timesdt0,timesdt[-end-1]])
+    #ax7_0.set_ylim([timesdt0,timesdt[-end-1]])
+    #ax8_0.set_ylim([timesdt0,timesdt[-end-1]])
+
+    lns = lns1+lns1_0
+    labs = [l.get_label() for l in lns]
+    ax1.legend(lns, labs)
+    
+
+    lns = lns2+lns2_0
+    labs = [l.get_label() for l in lns]
+    ax2.legend(lns, labs)
+
+
+    lns = lns3+lns3_0
+    labs = [l.get_label() for l in lns]
+    ax3.legend(lns, labs)
+    
+    
+    lns = lns4+lns4_0
+    labs = [l.get_label() for l in lns]
+    ax4.legend(lns, labs)
+    
+    
+    lns = lns5+lns5_0
+    labs = [l.get_label() for l in lns]
+    ax5.legend(lns, labs)
+    
+    
+    lns = lns6+lns6_0
+    labs = [l.get_label() for l in lns]
+    ax6.legend(lns, labs)
+    
+    
+    lns = lns7+lns7_0
+    labs = [l.get_label() for l in lns]
+    ax7.legend(lns, labs)
+    
+    
+    lns = lns8+lns8_0
+    labs = [l.get_label() for l in lns]
+    ax8.legend(lns, labs)
 
     
+    # ax1.get_xaxis().set_visible(False)
+    # ax1_0.get_xaxis().set_visible(False)
 
-
+    # ax2.get_xaxis().set_visible(False)
+    # ax2_0.get_xaxis().set_visible(False)
     
-    ax1.get_xaxis().set_visible(False)
-    ax1_0.get_xaxis().set_visible(False)
-
-    ax2.get_xaxis().set_visible(False)
-    ax2_0.get_xaxis().set_visible(False)
+    # ax3.get_xaxis().set_visible(False)
+    # ax3_0.get_xaxis().set_visible(False)
     
-    ax3.get_xaxis().set_visible(False)
-    ax3_0.get_xaxis().set_visible(False)
+    # ax4.get_xaxis().set_visible(False)
+    # ax4_0.get_xaxis().set_visible(False)
     
-    ax4.get_xaxis().set_visible(False)
-    ax4_0.get_xaxis().set_visible(False)
+    # ax5.get_xaxis().set_visible(False)
+    # ax5_0.get_xaxis().set_visible(False)
     
-    ax5.get_xaxis().set_visible(False)
-    ax5_0.get_xaxis().set_visible(False)
-    
-    ax6.get_xaxis().set_visible(False)
-    ax6_0.get_xaxis().set_visible(False)
+    # ax6.get_xaxis().set_visible(False)
+    # ax6_0.get_xaxis().set_visible(False)
     
 
     fig.tight_layout(h_pad=0,w_pad=4)
