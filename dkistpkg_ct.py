@@ -348,7 +348,7 @@ def multistepprocess(path,folder,dir_list,div=10,startstep=0):
     return image_data_arr_arr, rasterpos, times
 
 
-def spatialaxis(path,folder1,dir_list2,line='Ca II H'):
+def spatialaxis(path,folder1,dir_list2,line='Ca II H',pid='84'):
     
     # find the axes of ViSP observations based on values given in L1 header;
     # spectral axis can be trusted as long as DKIST data set caveats have been
@@ -361,8 +361,14 @@ def spatialaxis(path,folder1,dir_list2,line='Ca II H'):
     #crval1,cdelt1
     hdul1 = i_file_raster1
     centerlambda = hdul1[1].header['CRVAL1']
+    
+
     deltlambda = hdul1[1].header['CDELT1'] 
     nlambda = hdul1[1].header['NAXIS2']
+    
+    if pid == '50':
+        centerlambda = hdul1[1].header['CRVAL2']
+        deltlambda = hdul1[1].header['CDELT2']
     
     dispersion_range = np.linspace(centerlambda-deltlambda*(nlambda-1)/2,
                                    centerlambda+deltlambda*(nlambda-1)/2,nlambda)
@@ -450,12 +456,12 @@ def pltsubtract(dispersion_range,nonflare_average,scaled_flare_time,muted,indexs
         ax.plot(dispersion_range*10,scaled_flare_time[0,:,indexs[0]]-\
                 nonflare_average,color=muted[6],label='Flare-Only')
     else:
-        ax.plot(dispersion_range[end:]*10,nonflare_average[:-end-1],\
+        ax.plot(dispersion_range[end:]*10,nonflare_average[:-end],\
                 color=muted[4],label='Non-Flare')
         ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]],\
                 color=muted[7],label='Flare-Time')
         ax.plot(dispersion_range[end:]*10,scaled_flare_time[0,end:,indexs[0]]-\
-                nonflare_average[:-end-1],color=muted[6],label='Flare-Only')    
+                nonflare_average[:-end],color=muted[6],label='Flare-Only')    
     ax.grid()
     #ax.set_ylim([0,5e6])
     ax.legend(loc=0)
@@ -657,16 +663,16 @@ def widths_strengths(ew_CaII_all_fs,eqw_CaII_all_fs,width_CaII_all_fs,
     
             integrand = (sample_flaretime-nolines)/(maxint-maxcont)
             normflux = np.divide(foreqw,nolineseq)
-    
+            
             integrand2 = 1 - normflux
     
             #equivalent width determination, efefctive width determinatino
-            ew_caII = integrate.cumtrapz(integrand[caII_low:caII_high],
-                                         dispersion_range[caII_low:caII_high])\
-                [-1]
-            eqw_caII = integrate.cumtrapz(integrand2[caII_low:caII_high],
-                                          dispersion_range[caII_low:caII_high])\
-                [-1]
+            ew_caII = integrate.trapezoid(integrand[caII_low:caII_high],
+                                         dispersion_range[caII_low:caII_high])
+                
+            eqw_caII = integrate.trapezoid(integrand2[caII_low:caII_high],
+                                          dispersion_range[caII_low:caII_high])
+            
             maxind_Hep = np.argmax(sample_flaretime[hep_low:hep_high])
             maxint_Hep = sample_flaretime[maxind_Hep+hep_low]
             maxcont_Hep = nolines[maxind_Hep+hep_low]
@@ -675,10 +681,10 @@ def widths_strengths(ew_CaII_all_fs,eqw_CaII_all_fs,width_CaII_all_fs,
                              nolines[hep_low:hep_high])/\
                 (maxint_Hep-maxcont_Hep)
     
-            ew_Hep = integrate.cumtrapz(integrand_Hep,
-                                        dispersion_range[hep_low:hep_high])[-1]
-            eqw_Hep = integrate.cumtrapz(integrand2[hep_low:hep_high],
-                                         dispersion_range[hep_low:hep_high])[-1]
+            ew_Hep = integrate.trapezoid(integrand_Hep,
+                                        dispersion_range[hep_low:hep_high])
+            eqw_Hep = integrate.trapezoid(integrand2[hep_low:hep_high],
+                                         dispersion_range[hep_low:hep_high])
     
             ew_CaII_all_fs[i,j]=ew_caII
             ew_hep_all_fs[i,j]=ew_Hep
@@ -827,13 +833,13 @@ def widths_strengths_oneline(ew_line_all_fs,eqw_line_all_fs,width_line_all_fs,
             integrand2 = 1 - normflux
     
             #equivalent width determination, efefctive width determinatino
-            ew_line = integrate.cumtrapz(integrand[line_low:line_high],
+            ew_line = integrate.trapezoid(integrand[line_low:line_high],
                                          dispersion_range[line_low:line_high])\
                 [-1]
-            eqw_line = integrate.cumtrapz(integrand2[line_low:line_high],
+            eqw_line = integrate.trapezoid(integrand2[line_low:line_high],
                                           dispersion_range[line_low:line_high])\
                 [-1]
-            int_line = integrate.cumtrapz(sel,selwl)[-1]*10
+            int_line = integrate.trapezoid(sel,selwl)[-1]*10
             print(int_line)
             print(i)
             print(j)
@@ -1100,6 +1106,8 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
               maxinds,times_raster1,caII_low,caII_high,double_gaussian,gaussian,selwl,sel,
               pid='pid_1_84',parameters = [2e6,396.82,0.01,2e6,396.86,0.015]):
     fig, ax = plt.subplots(3,4,figsize=(30,30))
+
+
     
     # Original script for double-Gaussian fitting and plotting; no error metrics,
     # just visualization, limited room for model selection.  Not for
@@ -1109,7 +1117,7 @@ def gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,storesig2,
     fig.suptitle('Ca II H line evolution, 19-Aug-2022, Raster 1, Kernel Center'
                  ,fontsize=35)
     
-    for i in range(np.shape(bkgd_subtract_flaretime)[0]):
+    for i in range(11):
         selwl = dispersion_range[caII_low:caII_high]
         sel = bkgd_subtract_flaretime[i,caII_low:caII_high,maxinds[i]]-\
             min(bkgd_subtract_flaretime[i,caII_low:caII_high,maxinds[i]])

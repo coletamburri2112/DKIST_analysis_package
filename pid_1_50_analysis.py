@@ -17,7 +17,7 @@ Description of script:
 
 """
 # shift of wavelength range by inspection
-end=0
+end=5
 
 # package initialize
 import dkistpkg_ct as DKISTanalysis
@@ -31,21 +31,21 @@ matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 muted = DKISTanalysis.color_muted2()
 
 # path and file ID for ViSP data
-path = '/Volumes/ViSP_External/pid_1_84/'
-folder1 = 'AZVXV'
+path = '/Users/coletamburri/Desktop/pid_1_50/'
+path2 = '/Volumes/ViSP_External/pid_1_84/'
+folder1 = 'AKEJR'
 folder2 = 'ANYDJ' # for QS calibration - data from 22UT on 19 August
 
 # list of files in directory for DKIST/ViSP
 dir_list2 = DKISTanalysis.pathdef(path,folder1) #flaretime
-dir_list3 = DKISTanalysis.pathdef(path,folder2) #qs
+dir_list3 = DKISTanalysis.pathdef(path2,folder2) #qs
 
 # Stonyhurst lon/lat position of the AR from JHv
-lon = 58.57 #degrees
-lat = -29.14 #degrees
+lon = 20.33 #degrees
+lat = -52.2 #degrees
 
-# Stonyhurst lon/lat position of the AR from JHv for QS
-lon = 60 #degrees
-lat = -28 #degrees
+lonqs = lon
+latqs = lat
 
 
 wl = 396.847 # central wavelength, Ca II H
@@ -58,7 +58,7 @@ hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu, doppshrel,\
 # spatial coordinates, qs    
 hpc1_arcsecqs, hpc2_arcsecqs, x_centerqs, y_centerqs, zqs, rhoqs, muqs, doppshrelqs,\
     doppshnonrelqs = \
-    DKISTanalysis.spatialinit(path,folder2,dir_list3,lon,lat,wl)
+    DKISTanalysis.spatialinit(path2,folder2,dir_list3,lon,lat,wl)
 
 # get limb darkening coefficient 
 clv_corr = DKISTanalysis.limbdarkening(wl, mu=mu, nm=True)
@@ -75,16 +75,17 @@ startstepqs = 250
 
 # process multi-step raster - for qs time
 image_data_arr_arr_qs, rasterpos_qs, times_qs = \
-    DKISTanalysis.multistepprocess(path,folder2,dir_list3,div=10,
+    DKISTanalysis.multistepprocess(path2,folder2,dir_list3,div=10,
                                    startstep=startstepqs)
     
-# for pid_1_84 - process four-step raster
-image_data_arr_arr,i_file_raster1, for_scale, times_raster1,times = \
-    DKISTanalysis.fourstepprocess(path,folder1,dir_list2)
+# process multi-step raster - for qs time
+image_data_arr_arr, rasterpos, times = \
+    DKISTanalysis.multistepprocess(path,folder1,dir_list2,div=10)
     
 # spatial and dispersion axes for single observation (single slit step)
 spatial_range, dispersion_range = DKISTanalysis.spatialaxis(path,folder1,
-                                                            dir_list2,line='Ca II H')
+                                                            dir_list2,line='Ca II H',
+                                                            pid='50')
 
 # # old code, when basing QS on 15 August 2022 disk-center observations
 # #only for 19 August observations, really - the QS will be different for others
@@ -175,7 +176,7 @@ nonflare_multfact = fit_vals
 
 # intensity calibration, background subtraction for flare-time                            
 scaled_flare_time, bkgd_subtract_flaretime = \
-    DKISTanalysis.scaling(for_scale, nonflare_multfact,clv_corr,
+    DKISTanalysis.scaling(image_data_arr_arr, nonflare_multfact,clv_corr,
                           nonflare_average_avg,end=end)
 
 # definition of index bounds for Ca II H lines
@@ -210,7 +211,7 @@ maxindices = DKISTanalysis.maxintind(dispersion_range,bkgd_subtract_flaretime,
 
 # plot intensity calibrated, background-subtracted spectra
 DKISTanalysis.pltsubtract(dispersion_range_fin,nonflare_average_avg,
-                          scaled_flare_time,muted,maxindices,end=end)
+                          scaled_flare_time,muted,maxindices,end=end,pid='pid_1_50')
 
 # variation in intensity value corresponding to wavelengths; PTE; to test
 # for variations in pseudo-continuum.  If PTE high, cannot be explained by the
@@ -295,10 +296,10 @@ parameters=[2e6,396.82,0.015,6e6,396.86,0.015]
 storeamp1,storeamp2,storesig1,storesig2,storemu1,storemu2 = \
     DKISTanalysis.gauss2fit(storeamp1,storemu1,storesig1,storeamp2,storemu2,
                             storesig2,bkgd_subtract_flaretime,dispersion_range_fin,
-                            DKISTanalysis.double_gaussian_fit,maxindices,times_raster1,
+                            DKISTanalysis.double_gaussian_fit,maxindices,times,
                             caII_low,caII_high,DKISTanalysis.double_gaussian,
                             DKISTanalysis.gaussian,selwl,sel,
-                            parameters = parameters)
+                            parameters = parameters,pid='pid_1_50')
 
 # width determination
 store_ten_width = []
@@ -321,7 +322,7 @@ storesig2_2 = []
 fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind,storeamp1_2,\
     storemu1_2,storesig1_2,storeamp2_2,storemu2_2,storesig2_2,selwl,sel = \
     DKISTanalysis.fittingroutines(bkgd_subtract_flaretime,dispersion_range_fin,
-                                  times_raster1, caII_low, caII_high,
+                                  times, caII_low, caII_high,
                                   DKISTanalysis.double_gaussian, 
                                   DKISTanalysis.gaussian, 
                                   selwl,sel,[4e6,396.85,0.02],
@@ -329,7 +330,7 @@ fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind,storeamp1_2,\
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
                                   maxindices,storeamp1_2,storemu1_2,
                                   storesig1_2,storeamp2_2,storemu2_2,
-                                  storesig2_2,pid='pid_1_84', date = '08/09/2022',
+                                  storesig2_2,pid='pid_1_850, date = '12/27/2022',
                                   line = 'Ca II H',nimg = 8,
                                   inds=[380,390,400,410,450,480,647,700,820,850,900],deg=7)
 
