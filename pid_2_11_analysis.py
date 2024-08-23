@@ -44,8 +44,8 @@ dir_list3 = DKISTanalysis.pathdef(path2,folder2) #qs
 lon = 57.99 #degrees
 lat = -15 #degrees
 
-lonqs = lon
-latqs = lat
+lonqs = 0
+latqs = 0
 
 
 wl = 396.847 # central wavelength, Ca II H
@@ -107,7 +107,7 @@ spatial_range, dispersion_range = DKISTanalysis.spatialaxis(path,folder1,
 # Begin calibration based on QS
 
 # Load Kurucz FTS Atlas
-wlsel, ilamsel = DKISTanalysis.load_fts(dispersion_range)
+wlsel, ilamsel = DKISTanalysis.load_fts(dispersion_range-.12)
 wlsel=wlsel/10
 
 # Average the QS data for space and time, for selected ranges
