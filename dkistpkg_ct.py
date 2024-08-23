@@ -320,7 +320,7 @@ def fourstepprocess(path,folder1,dir_list2):
         # image_data_arr_arr_raster1, image_data_arr_arr_raster2,\
         # image-data_arr-arr_raster3, image_data_arr_arr_raster3
         
-def multistepprocess(path,folder,dir_list,div=10,startstep=0):
+def multistepprocess(path,folder,dir_list,div=10,startstep=0,endstep=-1):
     
     # Multi-step raster procesing of DKIST data; bare bones storage, no
     # separation based on slit step, output includes all slit step positions
@@ -333,9 +333,9 @@ def multistepprocess(path,folder,dir_list,div=10,startstep=0):
     rasterpos = []
     times = []
     # extract relevant information
-    for i in range(0,round(len(dir_list)/div),1):
+    for i in range(startstep,endstep-1,1):
         
-        i_file = fits.open(path+folder+'/'+dir_list[i+startstep])
+        i_file = fits.open(path+folder+'/'+dir_list[i])
         times.append(i_file[1].header['DATE-BEG'])
         i_data = i_file[1].data[0]
         image_data_arrs0.append(i_data)
@@ -366,6 +366,9 @@ def spatialaxis(path,folder1,dir_list2,line='Ca II H',pid='84'):
     deltlambda = hdul1[1].header['CDELT1'] 
     nlambda = hdul1[1].header['NAXIS2']
     
+    if pid == '2_11':
+        centerlambda = hdul1[1].header['CRVAL2']
+        deltlambda = hdul1[1].header['CDELT2']       
     if pid == '50':
         centerlambda = hdul1[1].header['CRVAL2']
         deltlambda = hdul1[1].header['CDELT2']
@@ -384,6 +387,12 @@ def spatialaxis(path,folder1,dir_list2,line='Ca II H',pid='84'):
     spatial_range = np.linspace(centerspace-deltspace*(nspace-1)/2,
                                 centerspace+deltspace*(nspace-1)/2,nspace)
     
+    if pid == '2_11':
+        centerspace = hdul1[1].header['CRVAL1']
+        deltspace = hdul1[1].header['CDELT1'] #this actually is fine
+        nspace = hdul1[1].header['NAXIS1']
+        spatial_range = np.linspace(centerspace-deltspace*(nspace-1)/2,
+                                    centerspace+deltspace*(nspace-1)/2,nspace)   
     return spatial_range, dispersion_range
 
        
@@ -1460,7 +1469,7 @@ def perclevels(bkgd_subtract_flaretime,dispersion_range,caII_low,caII_high,
 
 # Co-alignment routines
 
-def space_range(hdul1):
+def space_range(hdul1,pid='1_84'):
     
     # Define spatial range for co-alignment given in L1 headers
     
@@ -1469,6 +1478,13 @@ def space_range(hdul1):
     
     x_delt = hdul1[1].header['CDELT2']
     y_delt = hdul1[1].header['CDELT3']
+    
+    if pid=='2_11':
+        x_cent = hdul1[1].header['CRVAL1']
+        y_cent = hdul1[1].header['CRVAL3']
+        
+        x_delt = hdul1[1].header['CDELT1']
+        y_delt = hdul1[1].header['CDELT3']       
     
     nspace = hdul1[1].header['NAXIS1']
     
@@ -1482,23 +1498,27 @@ def space_range(hdul1):
     arcsec_slit = np.linspace(0,nspace*x_delt,nspace)
     return x_cent, y_cent, x_delt, y_delt, x_range, y_range, arcsec_slit, nspace
 
-def vispranges(hdul1,spatial_range,nslitpos=4):
+def vispranges(hdul1,spatial_range,nslitpos=4,pid='1_84'):
     
     # Define spatial and wavelength ranges for ViSP; this takes all 
     # slit positions in a single raster scan and uses that as a second spatial
     # axis for the "ViSP image" which will be used to co-align with VBI
     
-    slitlen = hdul1[1].header['CDELT2']*len(spatial_range) #in arcsec
-    rastersize = hdul1[1].header['CDELT3']*nslitpos
+    if pid == '2_11':
+        slitlen = hdul1[1].header['CDELT1']*len(spatial_range) #in arcsec
+        rastersize = hdul1[1].header['CDELT3']*nslitpos
+    else:
+        slitlen = hdul1[1].header['CDELT2']*len(spatial_range) #in arcsec
+        rastersize = hdul1[1].header['CDELT3']*nslitpos
     
-    raster_range = [0,hdul1[1].header['CDELT3'],hdul1[1].header['CDELT3']*2,
-                    hdul1[1].header['CDELT3']*3,hdul1[1].header['CDELT3']*4]
+    raster_range = np.linspace(0,hdul1[1].header['CDELT3']*nslitpos,nslitpos+1)
+    
     spatial_range2 = np.insert(spatial_range,0,spatial_range[0]-
                                (spatial_range[1]-spatial_range[0]))
     
-    return spatial_range2, raster_range
+    return spatial_range2, raster_range, slitlen, rastersize
 
-def imgprep(path,folder1,dir_list2):
+def imgprep(path,folder1,dir_list2,startstep,endstep,pid='1_84'):
     
     # Prepare initial image in the ViSP set, for comparison to VBI. Could be 
     # any, but make sure the correct timestamp
@@ -1510,13 +1530,16 @@ def imgprep(path,folder1,dir_list2):
     image_data_arrs = []
     image_date = []
 
-    for i in range(0,round(len(dir_list2)),1):
+    for i in range(startstep,endstep,1):
         i_file = fits.open(path+folder1+'/'+dir_list2[i])
         
         times.append(i_file[1].header['DATE-BEG'])
         
         lammin = i_file[1].header['WAVEMIN']
         lamcen = i_file[1].header['CRVAL1']
+        
+        if pid=='2_11':
+            lamcen = i_file[1].header['CRVAL2']
         
         i_data = i_file[1].data[0]
         
@@ -1526,7 +1549,7 @@ def imgprep(path,folder1,dir_list2):
         
     return image_data_arrs0
 
-def line_avg(image_data_arrs0,lowind,highind,nslit,nwave):
+def line_avg(image_data_arr_arr,lowind,highind,nslit,nwave):
     caiiavgs = np.zeros((nslit,nwave))
     
     # define the boundaries (in dispersion direction) for the line and get an 
@@ -1537,7 +1560,9 @@ def line_avg(image_data_arrs0,lowind,highind,nslit,nwave):
     # the code originally developed for pid_1_84
     
     for i in range(nslit):
-        caiiavgs[i,:] = np.mean(image_data_arrs0[i][lowind:highind,:],0)
+        caiiavgs[i,:] = np.mean(image_data_arr_arr[i,lowind:highind,:],0)
+
+
             
     return caiiavgs
 
