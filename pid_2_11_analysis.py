@@ -17,7 +17,7 @@ Description of script:
 
 """
 # shift of wavelength range by inspection
-end=5
+end=4
 
 # package initialize
 import dkistpkg_ct as DKISTanalysis
@@ -72,9 +72,9 @@ clv_corrqs = DKISTanalysis.limbdarkening(wl, mu=muqs, nm=True)
     
 # time step start for chosen QS observations
 startstepqs = 0
-endstepqs=1000
-startstep=2000 #where does interesting bit begin?
-endstep=4000#where does interesting bit end?
+endstepqs=500
+startstep=2500#where does interesting bit begin?
+endstep=3500#where does interesting bit end?
 print('here2')
 # process multi-step raster - for qs time
 image_data_arr_arr, rasterpos, times = \
@@ -85,13 +85,14 @@ image_data_arr_arr_qs, rasterpos_qs, times_qs = \
     DKISTanalysis.multistepprocess(path2,folder2,dir_list3,div=1,
                                    startstep=startstepqs,endstep=endstepqs)
     
-    
-    
+
+#odd shift in the data for eid_2_11 - added logic to adjust for    
+shift = .123
 
 # spatial and dispersion axes for single observation (single slit step)
 spatial_range, dispersion_range = DKISTanalysis.spatialaxis(path,folder1,
                                                             dir_list2,line='Ca II H',
-                                                            pid='2_11')
+                                                            pid='2_11',shift=shift)
 
 # # old code, when basing QS on 15 August 2022 disk-center observations
 # #only for 19 August observations, really - the QS will be different for others
@@ -107,7 +108,7 @@ spatial_range, dispersion_range = DKISTanalysis.spatialaxis(path,folder1,
 # Begin calibration based on QS
 
 # Load Kurucz FTS Atlas
-wlsel, ilamsel = DKISTanalysis.load_fts(dispersion_range-.12)
+wlsel, ilamsel = DKISTanalysis.load_fts(dispersion_range)
 wlsel=wlsel/10
 
 # Average the QS data for space and time, for selected ranges
@@ -127,10 +128,10 @@ line2 = 396.926
 # (as is necessary for the 19 August 2022 observations) are ok
 
 # indices of telluric lines in spectrum - lower
-lowinds = [400,625]
+lowinds = [510,720]
 
 # indices of telluric lines in spectrum - upper
-highinds = [450,690]
+highinds = [550,755]
 
 # define the multiplication factor (polynomial), new dispersion range, fit values
 # to scale the quiet sun to FTS atlas
@@ -139,7 +140,8 @@ cont_mult_facts,fit_vals,new_dispersion_range,dispersion_range_fin,rat=\
                                        space_and_time_averaged_qs,wlsel,ilamsel,
                                        DKISTanalysis.find_nearest,line1,line2,
                                        lowinds,highinds,limbdark_fact=clv_corrqs,
-                                       noqs_flag=2)
+                                       noqs_flag=2,cont_vals = [396.49,396.5,396.628,396.71,396.77,
+                                                396.9,397.075])
 
 # calibrate the quiet sun 
 calibrated_qs=fit_vals*space_and_time_averaged_qs/clv_corrqs
@@ -186,8 +188,8 @@ scaled_flare_time, bkgd_subtract_flaretime = \
                           nonflare_average_avg,end=end)
 
 # definition of index bounds for Ca II H lines
-caII_low_foravg = 525
-caII_high_foravg = 600
+caII_low_foravg = 570
+caII_high_foravg = 740
 
 #indices to search within to find flare kernel center
 spacelow = 1000
@@ -217,7 +219,7 @@ maxindices = DKISTanalysis.maxintind(dispersion_range,bkgd_subtract_flaretime,
 
 # plot intensity calibrated, background-subtracted spectra
 DKISTanalysis.pltsubtract(dispersion_range_fin,nonflare_average_avg,
-                          scaled_flare_time,muted,maxindices,end=end,pid='pid_1_50')
+                          scaled_flare_time,muted,maxindices,end=end,pid='pid_2_11')
 
 # variation in intensity value corresponding to wavelengths; PTE; to test
 # for variations in pseudo-continuum.  If PTE high, cannot be explained by the
@@ -235,10 +237,10 @@ DKISTanalysis.pltsubtract(dispersion_range_fin,nonflare_average_avg,
 
 # equivalent widths, effective widths, widths
 # indices defining line locations
-caII_low = 480
-caII_high = 650
-hep_low = 700
-hep_high = 850
+caII_low = 570
+caII_high = 775
+hep_low = 730
+hep_high = 900
 
 #first profile, to use in testing
 sample_flaretime = bkgd_subtract_flaretime[0,:,maxindices[0]]
@@ -255,30 +257,30 @@ sample_flaretime = bkgd_subtract_flaretime[0,:,maxindices[0]]
 ########
 
 # line widths, strengths - initialize arrays
-ew_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
-                           np.shape(bkgd_subtract_flaretime)[2]))
-ew_hep_all_fs = np.zeros((len(scaled_flare_time)-5,
-                          np.shape(bkgd_subtract_flaretime)[2]))
-eqw_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
-                            np.shape(bkgd_subtract_flaretime)[2]))
-eqw_hep_all_fs = np.zeros((len(scaled_flare_time)-5,
-                           np.shape(bkgd_subtract_flaretime)[2]))
-width_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
-                              np.shape(bkgd_subtract_flaretime)[2]))
-width_hep_all_fs = np.zeros((len(scaled_flare_time)-5,
-                             np.shape(bkgd_subtract_flaretime)[2]))
+# ew_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
+#                            np.shape(bkgd_subtract_flaretime)[2]))
+# ew_hep_all_fs = np.zeros((len(scaled_flare_time)-5,
+#                           np.shape(bkgd_subtract_flaretime)[2]))
+# eqw_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
+#                             np.shape(bkgd_subtract_flaretime)[2]))
+# eqw_hep_all_fs = np.zeros((len(scaled_flare_time)-5,
+#                            np.shape(bkgd_subtract_flaretime)[2]))
+# width_CaII_all_fs = np.zeros((len(scaled_flare_time)-5,
+#                               np.shape(bkgd_subtract_flaretime)[2]))
+# width_hep_all_fs = np.zeros((len(scaled_flare_time)-5,
+#                              np.shape(bkgd_subtract_flaretime)[2]))
 
 
-# line widths, strength determination
-ew_CaII_all_fs, ew_hep_all_fs, eqw_CaII_all_fs,\
-    eqw_hep_all_fs, width_CaII_all_fs, width_hep_all_fs = \
-        DKISTanalysis.widths_strengths(ew_CaII_all_fs,eqw_CaII_all_fs,
-                                       width_CaII_all_fs,ew_hep_all_fs,
-                                       eqw_hep_all_fs,width_hep_all_fs,caII_low,
-                                       caII_high,hep_low,hep_high,
-                                       scaled_flare_time,
-                                       bkgd_subtract_flaretime, 
-                                       dispersion_range_fin)
+# # line widths, strength determination
+# ew_CaII_all_fs, ew_hep_all_fs, eqw_CaII_all_fs,\
+#     eqw_hep_all_fs, width_CaII_all_fs, width_hep_all_fs = \
+#         DKISTanalysis.widths_strengths(ew_CaII_all_fs,eqw_CaII_all_fs,
+#                                        width_CaII_all_fs,ew_hep_all_fs,
+#                                        eqw_hep_all_fs,width_hep_all_fs,caII_low,
+#                                        caII_high,hep_low,hep_high,
+#                                        scaled_flare_time,
+#                                        bkgd_subtract_flaretime, 
+#                                        dispersion_range_fin)
         
 # Gaussian fitting
 # automate for all timesteps
@@ -336,9 +338,9 @@ fits_1g,fits_2g,fits_2gneg,params2gaussnew,stopind,storeamp1_2,\
                                   [.5e6,396.85,0.015,-1e6,396.85,0.015],
                                   maxindices,storeamp1_2,storemu1_2,
                                   storesig1_2,storeamp2_2,storemu2_2,
-                                  storesig2_2,pid='pid_2_11', date = '8/8/2024',
-                                  line = 'Ca II H',nimg = 8,
-                                  inds=[380,390,400,410,450,480,647,700,820,850,900],deg=7)
+                                  storesig2_2,pid='pid_2_11', date = '8/11/2024',
+                                  line = 'Ca II H',nimg = 40,
+                                  inds=[240,260,300,410,500],deg=1,start=90)
 
 vel1,vel2 = DKISTanalysis.conv_to_vel(storemu1_2,storemu2_2,mu)
 # plot results of Gaussian fitting
@@ -351,9 +353,9 @@ DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range_fin,
                             DKISTanalysis.double_gaussian,
                             DKISTanalysis.gaussian,times,muted,
                             caII_low,caII_high,fits_1g,fits_2g,fits_2gneg,maxindices,
-                            mu, pid='pid_1_84', date = '08092022',line = 'Ca II H',
-                            nimg = 7, nrow=2,ncol=4,lamb0=wl,note=note,yhigh=7.5e6,
-                            inds=[380,390,400,410,450,480,647,700,820,850,900],deg=7)
+                            mu, pid='pid_2_11', date = '08112024',line = 'Ca II H',
+                            nimg = 40, nrow=5,ncol=8,lamb0=wl,note=note,yhigh=9e6,
+                            inds=[240,260,300,410,500],deg=1,start=90)
 
 
 #processing of all raster slices
