@@ -348,7 +348,7 @@ def multistepprocess(path,folder,dir_list,div=10,startstep=0,endstep=-1):
     return image_data_arr_arr, rasterpos, times
 
 
-def spatialaxis(path,folder1,dir_list2,line='Ca II H',pid='84'):
+def spatialaxis(path,folder1,dir_list2,line='Ca II H',pid='84',shift=0):
     
     # find the axes of ViSP observations based on values given in L1 header;
     # spectral axis can be trusted as long as DKIST data set caveats have been
@@ -393,6 +393,9 @@ def spatialaxis(path,folder1,dir_list2,line='Ca II H',pid='84'):
         nspace = hdul1[1].header['NAXIS1']
         spatial_range = np.linspace(centerspace-deltspace*(nspace-1)/2,
                                     centerspace+deltspace*(nspace-1)/2,nspace)   
+        
+    if shift > 0:
+        dispersion_range = dispersion_range-shift
     return spatial_range, dispersion_range
 
        
@@ -421,10 +424,10 @@ def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
             for k in range(np.shape(for_scale)[2]):
                 # intensity calibration factor
                 if limbd == 1:
-                    scaled_flare_time[i,:,k] = nonflare_multfact[i]*for_scale[i,:,k]/\
+                    scaled_flare_time[i,:,k] = nonflare_multfact*for_scale[i,:,k]/\
                         limbdarkening
                 elif limbd == 0:
-                    scaled_flare_time[i,:,k] = nonflare_multfact[i]*for_scale[i,:,k]          
+                    scaled_flare_time[i,:,k] = nonflare_multfact*for_scale[i,:,k]          
     else:
         for i in range(np.shape(for_scale)[0]):
             for k in range(np.shape(for_scale)[2]):
@@ -445,7 +448,7 @@ def scaling(for_scale,nonflare_multfact,limbdarkening,nonflare_average,
             if end ==0:
                 bkgd_subtract_flaretime[i,:,j] = scaled_flare_time[i,end:,j]-nonflare_average[:]
             else:
-                bkgd_subtract_flaretime[i,end:,j] = scaled_flare_time[i,end:,j]-nonflare_average[:-end-1]
+                bkgd_subtract_flaretime[i,end:,j] = scaled_flare_time[i,end:,j]-nonflare_average[:-end]
 
         
     return scaled_flare_time, bkgd_subtract_flaretime
@@ -1162,7 +1165,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                     storesig1,storeamp2,storemu2,storesig2,pid='pid_1_84',
                     date = '08/09/2022',line = 'Ca II H',nimg = 7,
                     inds=[410,460,510,520,590,600,610,620,630,640,650,660,670,680,690,700,
-                          720],deg=7):
+                          720],deg=7,start=0):
     # More flexible line fitting routines; currently for Ca II H as observed
     # in pid_1_84, but flexible for application to other lines.  Currently also
     # only includes functinoality for single Gaussian and double Gaussian fits;
@@ -1182,16 +1185,16 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     stopind=0
     # first iteration. Use this as guide for the fit parameters to follow
     for j in range(nimg):
-        kernind = maxinds[j]
+        kernind = maxinds[start+j]
         if l == 0:
              
-            cont_int_array = bkgd_subtract_flaretime[j,inds,kernind]
+            cont_int_array = bkgd_subtract_flaretime[start+j,inds,kernind]
             cont_int_wave_array = dispersion_range[inds]
             deg = deg
             p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
             nolines = p(dispersion_range)
             selwl = dispersion_range[line_low:line_high]
-            sel = bkgd_subtract_flaretime[j,line_low:line_high,kernind]-\
+            sel = bkgd_subtract_flaretime[start+j,line_low:line_high,kernind]-\
                 nolines[line_low:line_high]
                 
             
@@ -1200,7 +1203,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                 fig,ax=plt.subplots()
                 ax.plot(selwl,sel)
                 ax.plot(dispersion_range,nolines)
-                ax.plot(dispersion_range,bkgd_subtract_flaretime[j,:,kernind])
+                ax.plot(dispersion_range,bkgd_subtract_flaretime[start+j,:,kernind])
                 ax.set_xlim([dispersion_range[0],dispersion_range[-1]])
                 plt.show()
                 
@@ -1222,7 +1225,7 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
                 continue
         elif l==1:
             # ID the first time the fit was good
-            stopind = j
+            stopind = start+j
             break
         
             
@@ -1236,14 +1239,14 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
     # print(params2gauss)
     for i in range(nimg):
         
-        kernind = maxinds[i]
-        cont_int_array = bkgd_subtract_flaretime[i,inds,kernind]
+        kernind = maxinds[i+start]
+        cont_int_array = bkgd_subtract_flaretime[i+start,inds,kernind]
         cont_int_wave_array = dispersion_range[inds]
         deg =deg
         p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
         nolines = p(dispersion_range)
         selwl = dispersion_range[line_low:line_high]
-        sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
+        sel = bkgd_subtract_flaretime[i+start,line_low:line_high,kernind]-\
             nolines[line_low:line_high]
                 
         try:
@@ -1293,7 +1296,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
                   lamb0 = 396.847,c=2.99e5,
                   note='',lim=0.3e6,
                   yhigh=1.5e6,inds=[410,460,510,520,590,600,610,620,630,640,650,
-                                    660,670,680,690,700,720],deg=7):
+                                    660,670,680,690,700,720],deg=7,start=0):
     
     # plotting of the output of "fittingroutines"; can expand to beyond first
     # few image frames.  Tested 1 Dec 2023 for pid_1_84 Ca II H but not beyond
@@ -1334,14 +1337,14 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
     for i in range(nimg):
         
         # define continuum for subtraction, similar to fitting routines above
-        kernind = maxinds[i]
-        cont_int_array = bkgd_subtract_flaretime[i,inds,kernind]
+        kernind = maxinds[i+start]
+        cont_int_array = bkgd_subtract_flaretime[i+start,inds,kernind]
         cont_int_wave_array = dispersion_range[inds]
         deg = deg
         p = np.poly1d(np.polyfit(cont_int_wave_array,cont_int_array,deg))
         nolines = p(dispersion_range)
         selwl = dispersion_range[line_low:line_high]
-        sel = bkgd_subtract_flaretime[i,line_low:line_high,kernind]-\
+        sel = bkgd_subtract_flaretime[i+start,line_low:line_high,kernind]-\
             nolines[line_low:line_high]
         
         if i == 0:
@@ -1375,7 +1378,7 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
             
             
         if len(fit2g) == 6:
-            l = i % (nrow*ncol)
+            l = (i) % (nrow*ncol)
             gaussfity = gaussian(selwl,fit1g[0],fit1g[1],fit1g[2])
             gauss2fity = double_gaussian(selwl,fit2g[0],fit2g[1],fit2g[2],\
                                          fit2g[3],fit2g[4],fit2g[5])
@@ -1402,7 +1405,17 @@ def pltfitresults(bkgd_subtract_flaretime,dispersion_range,double_gaussian,
             secaxx = ax.flatten()[l].secondary_xaxis('top', 
                                                      functions=(veltrans,wltrans))
             ax.flatten()[l].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))  
-            ax.flatten()[l].set_title(times[i][-12:-4]+' UT')
+            ax.flatten()[l].set_title(times[start+i][-12:-4]+' UT')
+            ax.flatten()[l].set_ylim([0,yhigh/1e6])
+        else: 
+            l = (i) % (nrow*ncol)
+            ax.flatten()[l].plot(selwlshift,sel/1e6,label='data')
+            ax.flatten()[l].axis(ymin=0,ymax=(maxprofile+lim)/1e6)
+            ax.flatten()[l].axvline(0,linestyle='dotted')
+            secaxx = ax.flatten()[l].secondary_xaxis('top', 
+                                                     functions=(veltrans,wltrans))
+            ax.flatten()[l].xaxis.set_major_formatter(FormatStrFormatter('%.2f'))  
+            ax.flatten()[l].set_title(times[start+i][-12:-4]+' UT')
             ax.flatten()[l].set_ylim([0,yhigh/1e6])
             
     secaxx = ax.flatten()[0].secondary_xaxis('top', functions=(veltrans,wltrans))
@@ -2162,7 +2175,7 @@ def get_calibration_poly(wave_obs, spec_obs, wave_atlas, spec_atlas,find_nearest
                          absline1, absline2, indmins, indmaxs,cont_vals = [396.49,396.5,396.628,396.71,396.77,
                                   396.9,397.075,397.15],limbdark_fact = 1.0, 
                          wave_idx=None, extra_weight=20., bounds=None,
-                         noqs_flag = 0,noqs_ind = 20):
+                         noqs_flag = 0,noqs_ind = 20,ratioshift=0.0000016):
     
     dispersion_range = np.array(wave_obs)
     
@@ -2197,7 +2210,7 @@ def get_calibration_poly(wave_obs, spec_obs, wave_atlas, spec_atlas,find_nearest
     obsdiff = corr2 - corr1
     
     #change per nm
-    rat = (dt/obsdiff)+0.0000016
+    rat = (dt/obsdiff)+ratioshift
     
     # definition of new dispersion range
     new_dispersion_range = (np.arange(0,len(dispersion_range))-corr1)*rat + \
