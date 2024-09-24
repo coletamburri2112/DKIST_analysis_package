@@ -37,7 +37,7 @@ path = '/Volumes/ViSP_External/pid_1_84/'
 folder1 = 'AZVXV'
 
 #VBI
-path_vbi = '/Volumes/VBI_Aug_15_Aug_25_22/pid_1_84/'
+path_vbi = '/Volumes/VBI_External/pid_1_84/'
 folder1_vbi = 'BXWNO'
 folder2_vbi = 'BYMOL'
 
@@ -59,20 +59,21 @@ hpc1_arcsec, hpc2_arcsec, x_center, y_center, z, rho, mu, \
 limbdarkening = DKISTanalysis.limbdarkening(wl,mu=mu) # for Ca II H
 
 #processing of raster
-image_data_arr_arr,i_file_raster1, for_scale, times_raster1 = \
+
+image_data_arr_arr,i_file_raster1, for_scale, times_raster1,times = \
     DKISTanalysis.fourstepprocess(path,folder1,dir_list2)
 
 #initial scan from ViSP w/ spatial coordinates
 spatial_range, dispersion_range = DKISTanalysis.spatialaxis(path,folder1,dir_list2,line='Ca II H')
 
-spatial_range2, raster_range = DKISTanalysis.vispranges(i_file_raster1,
+spatial_range2, raster_range, slitlen, rastersize = DKISTanalysis.vispranges(i_file_raster1,
                                                         spatial_range)
 
 x_cent, y_cent, x_delt, y_delt, x_range, y_range, arcsec_slit, nspace = \
     DKISTanalysis.space_range(i_file_raster1)
 
 #prep image from ViSP initial scan    
-image_data_arrs0 = DKISTanalysis.imgprep(path,folder1,dir_list2)
+image_data_arrs0 = DKISTanalysis.imgprep(path,folder1,dir_list2,0,43)
 
 #plotting of ViSP scan
 caiiavgs = DKISTanalysis.line_avg(image_data_arrs0,500,600,4,nspace)

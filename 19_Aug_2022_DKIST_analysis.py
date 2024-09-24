@@ -72,11 +72,12 @@ clv_corrqs = DKISTanalysis.limbdarkening(wl, mu=muqs, nm=True)
     
 # time step start for chosen QS observations
 startstepqs = 250
+endstepqs = 450
 
 # process multi-step raster - for qs time
 image_data_arr_arr_qs, rasterpos_qs, times_qs = \
     DKISTanalysis.multistepprocess(path,folder2,dir_list3,div=10,
-                                   startstep=startstepqs)
+                                   startstep=startstepqs,endstep=endstepqs)
     
 # for pid_1_84 - process four-step raster
 image_data_arr_arr,i_file_raster1, for_scale, times_raster1,times = \
@@ -337,7 +338,7 @@ vel1,vel2 = DKISTanalysis.conv_to_vel(storemu1_2,storemu2_2,mu)
 # plot results of Gaussian fitting
 
 # note for this particular go-around
-note = ', aug16'
+note = ', 23sep2024_for_paper'
 
 #plot results of fitting
 DKISTanalysis.pltfitresults(bkgd_subtract_flaretime,dispersion_range_fin,

@@ -334,6 +334,7 @@ def multistepprocess(path,folder,dir_list,div=10,startstep=0,endstep=-1):
     times = []
     # extract relevant information
     for i in range(startstep,endstep-1,1):
+        print(i)
         
         i_file = fits.open(path+folder+'/'+dir_list[i])
         times.append(i_file[1].header['DATE-BEG'])
@@ -1277,13 +1278,14 @@ def fittingroutines(bkgd_subtract_flaretime,dispersion_range,
             
             
         except RuntimeError:
-            fits_1g.append(['NaN','NaN'])
-            fits_2g.append(['NaN','NaN'])
+            print('Runtime Error! Worth a check at index '+str(i))
+            fits_1g.append([fit1g,fit1gcov])
+            fits_2g.append([fit2g,fit2gcov])
             fits_2gneg.append(['NaN','NaN'])
             continue
         
         #fits_2gneg.append([fit2gneg,fit2gnegcov])
-        print(stopind)
+
     return fits_1g, fits_2g, fits_2gneg, params2gaussnew,stopind,storeamp1,\
         storemu1,storesig1,storeamp2,storemu2,storesig2,selwl,sel
     
@@ -1573,7 +1575,7 @@ def line_avg(image_data_arr_arr,lowind,highind,nslit,nwave):
     # the code originally developed for pid_1_84
     
     for i in range(nslit):
-        caiiavgs[i,:] = np.mean(image_data_arr_arr[i,lowind:highind,:],0)
+        caiiavgs[i,:] = np.mean(image_data_arr_arr[i][lowind:highind,:],0)
 
 
             
@@ -1671,7 +1673,7 @@ def plt_precoalign(vbi_X, vbi_Y, hdul1_vbi, visp_X, visp_Y, vispimg,matplotlib,
     # for each coordinate system; points should not be
     # colinear
     
-    matplotlib.use('Qt5Agg')
+    matplotlib.use('macosx')
     aa = plt.ginput(6,timeout = 120)
     
     fig.savefig('/Users/coletamburri/Desktop/DKIST_Report/DKIST_analysis_package/'+pid+
@@ -1829,7 +1831,7 @@ def query_sdo(start_time, email, cutout, matplotlib,
 
     plt.show()
     
-    matplotlib.use('Qt5Agg')
+    matplotlib.use('macosx')
 
     bb = plt.ginput(3,timeout = 60)
     
