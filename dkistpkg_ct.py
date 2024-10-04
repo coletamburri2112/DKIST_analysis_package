@@ -1848,7 +1848,7 @@ def points_vbi(vbi_X,vbi_Y,dat0_vbi,matplotlib):
     ax1.set_aspect('equal')
     ax1.invert_xaxis()
 
-    matplotlib.use('Qt5Agg')
+    matplotlib.use('macosx')
 
     cc = plt.ginput(3,timeout=60)
     
